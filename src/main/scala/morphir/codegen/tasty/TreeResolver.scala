@@ -1,0 +1,104 @@
+package morphir.codegen.tasty
+
+import dotty.tools.dotc.ast.Trees
+import dotty.tools.dotc.core.{Contexts, Symbols, Types}
+import morphir.codegen.tasty.MorphUtils.*
+import morphir.ir.{Value, Type as MorphType}
+import morphir.sdk.List as MorphList
+
+import scala.quoted.Quotes
+import scala.util.{Failure, Success, Try}
+
+trait TreeResolver {
+
+  def resolveType(tree: Trees.Tree[?], inferredGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]])(using Quotes)(using Contexts.Context): Try[MorphType.Type[Unit]] = {
+    resolveTypeOpt(tree.typeOpt, inferredGenericTypeArgs)
+  }
+
+  private def resolveTypeOpt(typeOpt: Types.Type, inferredGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]])(using Quotes)(using Contexts.Context): Try[MorphType.Type[Unit]] = {
+    Try(typeOpt)
+      .filter(_.typeSymbol.isType)
+      .flatMap(_.toType(inferredGenericTypeArgs))
+      .orElse {
+        typeOpt match {
+          case Types.TermRef(_, sbl: Symbols.Symbol) => sbl.denot.info.resultType.toType(inferredGenericTypeArgs)
+          case ctr: Types.CachedTypeRef => ctr.symbol.denot.info.resultType.toType(inferredGenericTypeArgs)
+          case cat: Types.AppliedType => cat.toType(inferredGenericTypeArgs)
+          case met: Types.MethodType => resolveMethodType(met, inferredGenericTypeArgs)
+          case ot: Types.OrType if ot.baseClasses.nonEmpty => ot.baseClasses.head.localReturnType.toType(inferredGenericTypeArgs)
+          case typeOpt => typeOpt.toType(inferredGenericTypeArgs)
+          // case x => Failure(Exception(s"Type could not be resolved: ${x.getClass}"))
+        }
+      }
+  }
+
+  private def resolveMethodType(met: Types.MethodType, inferredGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]])(using Quotes)(using Contexts.Context): Try[MorphType.Type[Unit]] = {
+    val paramTypes: List[Try[MorphType.Type[Unit]]] = met.paramInfos.map(p => resolveTypeOpt(p, inferredGenericTypeArgs))
+
+    for {
+      params <- paramTypes.toTryList
+      returnType <- resolveTypeOpt(met.resType, inferredGenericTypeArgs)
+    } yield
+      params.foldRight(returnType) { (paramType, accType) =>
+        MorphType.Function((), paramType, accType)
+      }
+  }
+
+  // In some cases the Scala AST does not contain generic type information while the Morphir AST still needs one.
+  // Here is an example:
+  //   def maybePositive(a: Int): Option[Int] = if (a > 0) Some(a) else None
+  // Neither the 'If' node nor the 'None' node know about the generic type 'Int'.
+  // For now I will go with the assumption that a node higher up in the AST hierarchy will know the generic type.
+  // In the above example the method return type has the generic type information, which is then passed down the tree.
+  // The 'If' node has an 'Option' return type, which inherits the generic type from the method's return type.
+  // The same is true for the 'None' node, which inherits the generic type from the 'If'.
+  // However 'Some(a)' does not need the inherited generic type as that information is available within the 'Some' node.
+  extension (typeOpt: Types.Type)(using Quotes)(using Contexts.Context)
+    def toType(inferredGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]]): Try[MorphType.Type[Unit]] = {
+      val maybeTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]] =
+        Option(typeOpt)
+          .collect { case Types.AppliedType(_, args) => args }
+          .map(_.map(_.toType(inferredGenericTypeArgs = None)).collect { case Success(t) => t })
+          .orElse(inferredGenericTypeArgs)
+
+      Try {
+        val symbolNamespace = resolveNamespace(typeOpt.typeSymbol)
+        (symbolNamespace, maybeTypeArgs) match {
+          case ("Boolean" :: "scala" :: Nil, _) =>
+            StandardTypes.boolReference
+          case ("Int" :: "scala" :: Nil, _) =>
+            StandardTypes.intReference
+          case ("Float" :: "scala" :: Nil, _) =>
+            StandardTypes.floatReference
+          case ("String" :: "Predef" :: "scala" :: Nil, _) =>
+            StandardTypes.stringReference
+          case ("BigDecimal" :: "math" :: "scala" :: Nil, _) =>
+            StandardTypes.decimalReference
+          case ("BigDecimal" :: "package" :: "scala" :: Nil, _) => // type alias to scala.math.BigDecimal
+            StandardTypes.decimalReference
+          case ("Option" :: "scala" :: Nil, Some(typeArgs)) if typeArgs.size == 1 =>
+            StandardTypes.maybeReference(typeArgs)
+          case ("Some" :: "scala" :: Nil, Some(typeArgs)) if typeArgs.size == 1 =>
+            StandardTypes.maybeReference(typeArgs)
+          case ("None" :: "scala" :: Nil, Some(typeArgs)) if typeArgs.size == 1 =>
+            StandardTypes.maybeReference(typeArgs)
+          case (name, typeArgs) =>
+            throw UnsupportedOperationException(s"Type name: $name is not supported with type args: $typeArgs")
+        }
+      }
+    }
+
+  extension (morphirType: MorphType.Type[Unit])
+    def extractGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]] =
+      Some(morphirType).collect { case MorphType.Reference(_, _, types) if types.nonEmpty => types }
+
+  def expandSubTree(tree: Trees.Tree[?], inferredGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]])(using Quotes)(using Contexts.Context): Try[Value.Value[Unit, MorphType.Type[Unit]]] = {
+    tree match {
+      case apl: Trees.Apply[?] => apl.toValue(inferredGenericTypeArgs)
+      case ident: Trees.Ident[?] => ident.toValue(inferredGenericTypeArgs)
+      case lit: Trees.Literal[?] => lit.toValue
+      case ifs: Trees.If[?] => ifs.toValue(inferredGenericTypeArgs)
+      case x => Failure(Exception(s"Type not supported: ${x.getClass}"))
+    }
+  }
+}
