@@ -12,10 +12,14 @@ This project converts Scala 3 TASTy (Typed Abstract Syntax Tree) files into [Mor
 sbt compile
 sbt test                                                          # run all tests (munit)
 sbt "testOnly morphir.codegen.tasty.SupportedFunctionEquivalenceTest"   # run a single test class
+sbt "testOnly morphir.codegen.tasty.CaseClassEquivalenceTest"           # run case class / type alias tests
+sbt "testOnly morphir.codegen.tasty.CaseClassFieldAccessEquivalenceTest" # run case class field-access tests
+sbt "testOnly morphir.codegen.tasty.MixedNamespaceMultiTastyTest"       # run mixed-namespace multi-TASTy tests
 sbt "testOnly -- -k add"                                         # run tests matching a pattern
 
 # Run the converter
 sbt "runMain morphir.codegen.tasty.tastyToMorphirIR /tmp/output.json /path/to/File.tasty"
+sbt "runMain morphir.codegen.tasty.tastyToMorphirIR /tmp/output.json /path/to/One.tasty /path/to/Two.tasty"
 ```
 
 `sbt test` automatically:
@@ -67,6 +71,20 @@ test-fixtures/
       ...
     maybe-positive/
       ...
+    person-basic/
+      ...
+    account-balance/
+      ...
+    maybe-age/
+      ...
+    mixed-record/
+      ...
+    person-age-plus-one/
+      ...
+    account-balance-with-fee/
+      ...
+    maybe-age-selection/
+      ...
   scala/
     src/main/scala/arithmetic/
       Add.scala
@@ -86,6 +104,16 @@ test-fixtures/
       MaybeJust.scala
       MaybeNothing.scala
       MaybePositive.scala
+      PersonBasic.scala
+      AccountBalance.scala
+      MaybeAge.scala
+      MixedRecord.scala
+      PersonAgePlusOneRecord.scala
+      PersonAgePlusOne.scala
+      AccountBalanceWithFeeRecord.scala
+      AccountBalanceWithFee.scala
+      MaybeAgeSelectionRecord.scala
+      MaybeAgeSelection.scala
 ```
 
 The Scala fixtures are a separate SBT sub-project (`scalaAlgorithmFixtures`) compiled with Scala 3.3.7, so `.tasty` files are version-compatible with the inspector.
@@ -96,6 +124,21 @@ The Scala fixtures are a separate SBT sub-project (`scalaAlgorithmFixtures`) com
 2. Add the matching Scala fixture object under `test-fixtures/scala/src/main/scala/arithmetic/<Case>.scala`.
 3. Add a new entry to the `equivalenceCases` table in `SupportedFunctionEquivalenceTest.scala` when the case is a direct Elm/Scala equivalence case.
 4. Keep namespaces aligned: Elm should use package `Arithmetic` and module `Arithmetic.<Case>`, while Scala should use package `arithmetic` and object `<Case>`.
+
+### Adding a new case class / type alias test
+
+1. Create a new Elm fixture directory under `test-fixtures/elm/<case>/` with `morphir.json` and a single `type alias` module under `src/Arithmetic/<Case>.elm`.
+2. Add a matching top-level non-generic Scala `case class` under `test-fixtures/scala/src/main/scala/arithmetic/<Case>.scala`.
+3. Add a new entry to the `cases` table in `CaseClassEquivalenceTest.scala`.
+4. Keep namespaces aligned the same way as function fixtures: Elm package `Arithmetic`, Elm module `Arithmetic.<Case>`, Scala package `arithmetic`, Scala case class `<Case>`.
+
+### Adding a new case class field-access test
+
+1. Create a new Elm fixture directory under `test-fixtures/elm/<case>/` with `morphir.json`.
+2. Add one Elm module for the `type alias` record and one Elm module for the function that reads record fields.
+3. Add the matching Scala `case class` and a separate Scala `object` with the equivalent field-access function under `test-fixtures/scala/src/main/scala/arithmetic/`.
+4. Add a new entry to the `cases` table in `CaseClassFieldAccessEquivalenceTest.scala`.
+5. Keep the module order aligned between Scala `.tasty` inputs and Elm modules when comparing full distributions.
 
 ### Comparison strategy
 
@@ -109,9 +152,30 @@ The test suite compares the full parsed JSON distributions directly. This works 
 
 One intentional exception exists today: Scala `BigDecimal /` is mapped to `morphir.SDK.decimal.div.unsafe`, while the Morphir Elm SDK exposes `Decimal.div : Decimal -> Decimal -> Maybe Decimal`. That case is covered with a targeted Scala-side mapping assertion instead of a direct Elm equivalence test.
 
+`CaseClassEquivalenceTest.scala` compares full JSON distributions between Elm `type alias` fixtures and equivalent Scala `case class` fixtures. The current supported case-class scope is intentionally narrow:
+
+- top-level, non-generic case classes only
+- data fields only (methods/companions ignored)
+- field types limited to already-supported mappings: `Boolean`, `Int`, `Float`, `String`, `BigDecimal`, and `Option[T]`
+
+`CaseClassFieldAccessEquivalenceTest.scala` extends that coverage to functions that read case-class fields and use them in supported expressions. Current covered patterns include:
+
+- scalar field access used in arithmetic
+- decimal field access used in decimal arithmetic
+- `Option` field access returned from supported `if` expressions
+
+`MixedNamespaceMultiTastyTest.scala` covers multi-file conversions where Scala inputs come from related but different namespaces, such as `a.b` and `a.b.c`. Current behavior:
+
+- computes the longest common package prefix as the output Morphir package
+- moves remaining namespace segments into module paths
+- rebases user-defined type and value references to that common package root
+- fails fast for unrelated package roots
+
+Like the other main suites, mixed-namespace coverage now uses Elm-generated Morphir JSON as the baseline. The Scala side is validated by converting multiple `.tasty` inputs together and comparing the full resulting distribution directly against matching Elm fixture projects.
+
 The conversion pipeline is:
 
-1. **Entry point** (`TastyToMorphir.scala`): `tastyToMorphirIR(outputPath, tastyPath)` calls `TastyInspector.inspectTastyFiles`, then writes the resulting JSON.
+1. **Entry point** (`TastyToMorphir.scala`): `tastyToMorphirIR(outputPath, tastyPath...)` calls `TastyInspector.inspectTastyFiles`, computes a common package root for related namespaces, rebases module/reference paths, merges the resulting distributions, then writes the final JSON.
 2. **Tree traversal** (`TreeMorph.scala`): Handles `PackageDef`, produces a `VersionedDistribution`.
 3. **Module extraction** (`TypeDefMorph.scala`): Converts type definitions into Morphir modules.
 4. **Function conversion** (`DefDefMorph.scala`): Converts method definitions into Morphir values.

@@ -3,7 +3,7 @@ package morphir.codegen.tasty
 import dotty.tools.dotc.ast.Trees
 import dotty.tools.dotc.core.{Contexts, Symbols, Types}
 import morphir.codegen.tasty.MorphUtils.*
-import morphir.ir.{Value, Type as MorphType}
+import morphir.ir.{FQName, Name, Value, Type as MorphType}
 import morphir.sdk.List as MorphList
 
 import scala.quoted.Quotes
@@ -82,6 +82,9 @@ trait TreeResolver {
             StandardTypes.maybeReference(typeArgs)
           case ("None" :: "scala" :: Nil, Some(typeArgs)) if typeArgs.size == 1 =>
             StandardTypes.maybeReference(typeArgs)
+          case (typeName :: packageParts, typeArgs) if packageParts.nonEmpty && !packageParts.contains("scala") =>
+            val fQName = FQName.fqn(packageParts.reverse.mkString("."))(typeName)(typeName)
+            MorphType.Reference((), fQName, typeArgs.getOrElse(MorphList.empty))
           case (name, typeArgs) =>
             throw UnsupportedOperationException(s"Type name: $name is not supported with type args: $typeArgs")
         }
@@ -97,6 +100,7 @@ trait TreeResolver {
       case apl: Trees.Apply[?] => apl.toValue(inferredGenericTypeArgs)
       case ident: Trees.Ident[?] => ident.toValue(inferredGenericTypeArgs)
       case lit: Trees.Literal[?] => lit.toValue
+      case sel: Trees.Select[?] => sel.toValue(inferredGenericTypeArgs)
       case ifs: Trees.If[?] => ifs.toValue(inferredGenericTypeArgs)
       case x => Failure(Exception(s"Type not supported: ${x.getClass}"))
     }

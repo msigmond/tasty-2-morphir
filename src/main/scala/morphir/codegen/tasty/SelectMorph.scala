@@ -1,7 +1,7 @@
 package morphir.codegen.tasty
 
 import dotty.tools.dotc.ast.Trees.Select
-import dotty.tools.dotc.core.{Contexts, Names}
+import dotty.tools.dotc.core.{Contexts, Flags}
 import morphir.codegen.tasty.MorphUtils.*
 import morphir.ir.{Value, Type as MorphType}
 import morphir.sdk.List as MorphList
@@ -13,6 +13,17 @@ object SelectMorph extends TreeResolver {
 
   def toValue(sel: Select[?], inferredGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]])(using Quotes)(using Contexts.Context): Try[Value.Value[Unit, MorphType.Type[Unit]]] = {
     sel match {
+      case Select(qualifier, fieldName) if sel.symbol.flags.is(Flags.CaseAccessor) =>
+        for {
+          returnType <- resolveType(sel, inferredGenericTypeArgs)
+          subject <- expandSubTree(qualifier, inferredGenericTypeArgs = None)
+        } yield
+          Value.Value.Field(
+            returnType,
+            subject,
+            morphir.ir.Name.fromString(fieldName.show)
+          )
+
       case Select(qualifier, _) =>
         for {
           returnType <- resolveType(sel, inferredGenericTypeArgs)

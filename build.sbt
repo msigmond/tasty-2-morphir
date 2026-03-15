@@ -64,7 +64,11 @@ lazy val root = project
     // Ensure fixtures are compiled/generated before tests run.
     Test / test := (Test / test)
       .dependsOn(scalaAlgorithmFixtures / Compile / compile, generateElmIR)
-      .value
+      .value,
+
+    Test / testOnly := ((Test / testOnly)
+      .dependsOn(scalaAlgorithmFixtures / Compile / compile, generateElmIR))
+      .evaluated
   )
 
 commands += Command.command("clean") { state =>

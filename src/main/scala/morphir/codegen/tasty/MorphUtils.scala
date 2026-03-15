@@ -60,6 +60,7 @@ object MorphUtils {
       case Value.Value.Literal(t, _) => Success(t)
       case Value.Value.Variable(t, _) => Success(t)
       case Value.Value.Apply(t, _, _) => Success(t)
+      case Value.Value.Field(t, _, _) => Success(t)
       case x => Failure(UnsupportedOperationException(s"Value type is not supported: ${x.getClass}"))
     }
 
