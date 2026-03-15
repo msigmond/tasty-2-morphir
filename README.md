@@ -51,26 +51,32 @@ Arguments:
 - `Boolean`
 - `Int`
 - `Float`
+- `Double` (mapped to Morphir `float`)
 - `String`
 - `BigDecimal`
 - `Option[T]`
-- top-level, non-generic Scala `case class` data fields
+- Scala `case class` data fields, including generic single-parameter and nested record references
 
 ### Supported expressions
 
-- literals
+- literals, including `Boolean`
 - arithmetic operators: `+`, `-`, `*`, `/`
+- boolean operators: `&&`, `||`
 - comparison operators: `<`, `<=`, `>`, `>=`
 - function application
 - `if / else`
-- case-class field access
+- `Option` pattern matching with `Some(x)` / `None`
+- local `val` bindings and block expressions
+- case-class field access, including nested record access
 
 ### Mapping notes
 
 - `Int /` maps to Morphir `integerDivide`
 - `BigDecimal` arithmetic and comparison map to Morphir decimal SDK functions
 - Scala `BigDecimal /` maps to `morphir.SDK.decimal.div.unsafe`
+- Scala `Double` maps to Morphir `float`
 - Scala case classes are emitted as Morphir `type alias` records
+- generic case-class fields map to Morphir type variables when the generic parameter is preserved
 
 ### Multiple input `.tasty` files
 

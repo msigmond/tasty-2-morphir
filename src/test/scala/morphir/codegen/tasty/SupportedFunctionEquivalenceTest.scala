@@ -15,8 +15,18 @@ class SupportedFunctionEquivalenceTest extends TastyEquivalenceSuite:
     arithmeticCase("subtract", "Subtract", "subtract"),
     arithmeticCase("multiply", "Multiply", "multiply"),
     arithmeticCase("isPositive", "IsPositive", "is-positive"),
+    arithmeticCase("booleanLiteral", "BooleanLiteral", "boolean-literal"),
+    arithmeticCase("booleanAnd", "BooleanAnd", "boolean-and"),
+    arithmeticCase("booleanOr", "BooleanOr", "boolean-or"),
+    arithmeticCase("doubleLiteral", "DoubleLiteral", "double-literal"),
+    arithmeticCase("doubleAdd", "DoubleAdd", "double-add"),
     arithmeticCase("clamp", "Clamp", "clamp"),
     arithmeticCase("integerDivide", "IntegerDivide", "integer-divide"),
+    arithmeticCase("localVal", "LocalVal", "local-val"),
+    arithmeticCase("localValChain", "LocalValChain", "local-val-chain"),
+    arithmeticCase("localValHelperCall", "LocalValHelperCall", "local-val-helper-call"),
+    arithmeticCase("helperCall", "HelperCall", "helper-call"),
+    arithmeticCase("curriedHelperCall", "CurriedHelperCall", "curried-helper-call"),
     arithmeticCase("decimalAdd", "DecimalAdd", "decimal-add"),
     arithmeticCase("decimalSubtract", "DecimalSubtract", "decimal-subtract"),
     arithmeticCase("decimalMultiply", "DecimalMultiply", "decimal-multiply"),
@@ -26,7 +36,10 @@ class SupportedFunctionEquivalenceTest extends TastyEquivalenceSuite:
     arithmeticCase("decimalGte", "DecimalGte", "decimal-gte"),
     arithmeticCase("maybeJust", "MaybeJust", "maybe-just"),
     arithmeticCase("maybeNothing", "MaybeNothing", "maybe-nothing"),
-    arithmeticCase("maybePositive", "MaybePositive", "maybe-positive")
+    arithmeticCase("maybePositive", "MaybePositive", "maybe-positive"),
+    arithmeticCase("maybeMatchDefault", "MaybeMatchDefault", "maybe-match-default"),
+    arithmeticCase("maybeMatchIncrement", "MaybeMatchIncrement", "maybe-match-increment"),
+    arithmeticCase("maybeMatchMap", "MaybeMatchMap", "maybe-match-map")
   )
 
   registerEquivalenceCases(equivalenceCases)(

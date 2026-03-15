@@ -7,7 +7,9 @@ class CaseClassEquivalenceTest extends TastyEquivalenceSuite:
     arithmeticCase("personBasic", "PersonBasic", "person-basic"),
     arithmeticCase("accountBalance", "AccountBalance", "account-balance"),
     arithmeticCase("maybeAge", "MaybeAge", "maybe-age"),
-    arithmeticCase("mixedRecord", "MixedRecord", "mixed-record")
+    arithmeticCase("mixedRecord", "MixedRecord", "mixed-record"),
+    arithmeticCase("genericBox", "GenericBox", "generic-box"),
+    arithmeticMultiFileCase("nestedBoxContainer", List("GenericBox", "NestedBoxContainer"), "nested-box-container")
   )
 
   registerEquivalenceCases(cases)(

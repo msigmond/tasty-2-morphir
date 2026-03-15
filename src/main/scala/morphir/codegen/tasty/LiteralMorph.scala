@@ -11,6 +11,14 @@ import scala.util.{Failure, Success, Try}
 object LiteralMorph {
   def toValue(lit: Literal[?])(using Quotes)(using Contexts.Context): Try[Value.Value.Literal[Unit, MorphType.Type[Unit]]] = {
     lit match {
+      case Literal(Constant(value: Boolean)) =>
+        Success(
+          Value.Value.Literal(
+            StandardTypes.boolReference,
+            MorphLiteral.boolLiteral(value)
+          )
+        )
+
       case Literal(Constant(value: Int)) =>
         Success(
           Value.Value.Literal(
@@ -20,6 +28,14 @@ object LiteralMorph {
         )
 
       case Literal(Constant(value: Float)) =>
+        Success(
+          Value.Value.Literal(
+            StandardTypes.floatReference,
+            MorphLiteral.floatLiteral(value)
+          )
+        )
+
+      case Literal(Constant(value: Double)) =>
         Success(
           Value.Value.Literal(
             StandardTypes.floatReference,

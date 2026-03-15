@@ -6,7 +6,8 @@ class CaseClassFieldAccessEquivalenceTest extends TastyEquivalenceSuite:
   private val cases = List(
     arithmeticMultiFileCase("personAgePlusOne", List("PersonAgePlusOne", "PersonAgePlusOneRecord"), "person-age-plus-one"),
     arithmeticMultiFileCase("accountBalanceWithFee", List("AccountBalanceWithFee", "AccountBalanceWithFeeRecord"), "account-balance-with-fee"),
-    arithmeticMultiFileCase("maybeAgeSelection", List("MaybeAgeSelection", "MaybeAgeSelectionRecord"), "maybe-age-selection")
+    arithmeticMultiFileCase("maybeAgeSelection", List("MaybeAgeSelection", "MaybeAgeSelectionRecord"), "maybe-age-selection"),
+    arithmeticMultiFileCase("nestedBoxValue", List("GenericBox", "NestedBoxContainer", "NestedBoxValue"), "nested-box-value")
   )
 
   registerEquivalenceCases(cases)(

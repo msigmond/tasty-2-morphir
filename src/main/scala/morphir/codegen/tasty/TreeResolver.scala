@@ -1,7 +1,7 @@
 package morphir.codegen.tasty
 
 import dotty.tools.dotc.ast.Trees
-import dotty.tools.dotc.core.{Contexts, Symbols, Types}
+import dotty.tools.dotc.core.{Contexts, Flags, Symbols, Types}
 import morphir.codegen.tasty.MorphUtils.*
 import morphir.ir.{FQName, Name, Value, Type as MorphType}
 import morphir.sdk.List as MorphList
@@ -62,6 +62,14 @@ trait TreeResolver {
           .orElse(inferredGenericTypeArgs)
 
       Try {
+        if typeOpt.typeSymbol.flags.is(Flags.Param) then
+          inferredGenericTypeArgs match {
+            case Some(typeArg :: Nil) =>
+              typeArg
+            case _ =>
+              MorphType.Variable((), Name.fromString(typeOpt.typeSymbol.name.show))
+          }
+        else {
         val symbolNamespace = resolveNamespace(typeOpt.typeSymbol)
         (symbolNamespace, maybeTypeArgs) match {
           case ("Boolean" :: "scala" :: Nil, _) =>
@@ -69,6 +77,8 @@ trait TreeResolver {
           case ("Int" :: "scala" :: Nil, _) =>
             StandardTypes.intReference
           case ("Float" :: "scala" :: Nil, _) =>
+            StandardTypes.floatReference
+          case ("Double" :: "scala" :: Nil, _) =>
             StandardTypes.floatReference
           case ("String" :: "Predef" :: "scala" :: Nil, _) =>
             StandardTypes.stringReference
@@ -88,6 +98,7 @@ trait TreeResolver {
           case (name, typeArgs) =>
             throw UnsupportedOperationException(s"Type name: $name is not supported with type args: $typeArgs")
         }
+        }
       }
     }
 
@@ -98,9 +109,15 @@ trait TreeResolver {
   def expandSubTree(tree: Trees.Tree[?], inferredGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]])(using Quotes)(using Contexts.Context): Try[Value.Value[Unit, MorphType.Type[Unit]]] = {
     tree match {
       case apl: Trees.Apply[?] => apl.toValue(inferredGenericTypeArgs)
+      case block: Trees.Block[?] => BlockMorph.toValue(block, inferredGenericTypeArgs)
       case ident: Trees.Ident[?] => ident.toValue(inferredGenericTypeArgs)
+      case Trees.Inlined(_, bindings, expansion) =>
+        if (bindings.isEmpty) expandSubTree(expansion, inferredGenericTypeArgs)
+        else BlockMorph.toValue(bindings, expansion, inferredGenericTypeArgs)
       case lit: Trees.Literal[?] => lit.toValue
+      case mtch: Trees.Match[?] => mtch.toValue(inferredGenericTypeArgs)
       case sel: Trees.Select[?] => sel.toValue(inferredGenericTypeArgs)
+      case Trees.Typed(expr, _) => expandSubTree(expr, inferredGenericTypeArgs)
       case ifs: Trees.If[?] => ifs.toValue(inferredGenericTypeArgs)
       case x => Failure(Exception(s"Type not supported: ${x.getClass}"))
     }

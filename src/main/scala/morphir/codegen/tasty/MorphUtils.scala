@@ -48,6 +48,10 @@ object MorphUtils {
     def toValue(inferredGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]]): Try[Value.Value.IfThenElse[Unit, MorphType.Type[Unit]]] =
       IfMorph.toValue(ifs, inferredGenericTypeArgs)
 
+  extension (mtch: Match[?])(using Quotes)(using Contexts.Context)
+    def toValue(inferredGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]]): Try[Value.Value.PatternMatch[Unit, MorphType.Type[Unit]]] =
+      MatchMorph.toValue(mtch, inferredGenericTypeArgs)
+
   // ** Utility functions **
 
   def resolveNamespace(symbol: Symbols.Symbol)(using Quotes)(using Contexts.Context): List[String] = {
@@ -60,7 +64,12 @@ object MorphUtils {
       case Value.Value.Literal(t, _) => Success(t)
       case Value.Value.Variable(t, _) => Success(t)
       case Value.Value.Apply(t, _, _) => Success(t)
+      case Value.Value.Reference(t, _) => Success(t)
+      case Value.Value.Constructor(t, _) => Success(t)
       case Value.Value.Field(t, _, _) => Success(t)
+      case Value.Value.IfThenElse(t, _, _, _) => Success(t)
+      case Value.Value.LetDefinition(t, _, _, _) => Success(t)
+      case Value.Value.PatternMatch(t, _, _) => Success(t)
       case x => Failure(UnsupportedOperationException(s"Value type is not supported: ${x.getClass}"))
     }
 

@@ -55,6 +55,8 @@ object StandardFunctions {
 
   private def bySymbolNamespace(symbolNamespace: List[String], returnType: MorphType.Type[Unit], argumentType: MorphType.Type[Unit])(using Quotes)(using Contexts.Context): Try[Value.Value[Unit, MorphType.Type[Unit]]] =
     symbolNamespace match {
+      case "&&" :: _ => Success(toFunctionReference(FQName.fqn("morphir.SDK")("basics")("and"), returnType, argumentType))
+      case "||" :: _ => Success(toFunctionReference(FQName.fqn("morphir.SDK")("basics")("or"), returnType, argumentType))
       case "/" :: "Int" :: "scala" :: Nil => Success(toFunctionReference(FQName.fqn("morphir.SDK")("basics")("integerDivide"), returnType, argumentType))
       case "+" :: _ => Success(toFunctionReference(FQName.fqn("morphir.SDK")("basics")("add"), returnType, argumentType))
       case "-" :: _ => Success(toFunctionReference(FQName.fqn("morphir.SDK")("basics")("subtract"), returnType, argumentType))

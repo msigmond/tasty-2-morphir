@@ -16,15 +16,10 @@ object ApplyMorph extends TreeResolver {
       case Trees.Apply(sel: Trees.Select[?], args) =>
         for {
           returnType <- resolveType(apl, inferredGenericTypeArgs)
-          maybeGenericTypeArgs = returnType.extractGenericTypeArgs
-          argument <- getFunctionArgument(args, maybeGenericTypeArgs)
-          function <- sel.toValue(maybeGenericTypeArgs)
+          function <- sel.toValue(returnType.extractGenericTypeArgs)
+          applied <- applyArguments(function, args, returnType.extractGenericTypeArgs)
         } yield
-          Value.Value.Apply(
-            returnType,
-            function,
-            argument
-          )
+          applied
 
       case Trees.Apply(functionId: Trees.Ident[?], args) =>
         for {
@@ -47,7 +42,12 @@ object ApplyMorph extends TreeResolver {
             argument
           )
 
-      case Trees.Apply(fun, args) => Failure(Exception(s"Apply could not be processed: Apply(${fun.getClass},[${args.map(_.getClass).mkString(",")}])"))
+      case Trees.Apply(fun, args) =>
+        for {
+          function <- expandSubTree(fun, inferredGenericTypeArgs)
+          applied <- applyArguments(function, args, inferredGenericTypeArgs)
+        } yield
+          applied
     }
   }
 
@@ -118,5 +118,32 @@ object ApplyMorph extends TreeResolver {
       }
       .map(oneElem => expandSubTree(oneElem, inferredGenericTypeArgs))
       .flatten
+  }
+
+  private def applyArguments(function: Value.Value[Unit, MorphType.Type[Unit]],
+                             args: List[Trees.Tree[?]],
+                             inferredGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]])(using Quotes)(using Contexts.Context): Try[Value.Value[Unit, MorphType.Type[Unit]]] = {
+    args match {
+      case Nil => Failure(Exception("Function application requires at least one argument"))
+      case head :: tail =>
+        for {
+          argument <- expandSubTree(head, inferredGenericTypeArgs)
+          nextReturnType <- function.extractType.flatMap {
+            case MorphType.Function(_, _, returnType) => Try(returnType)
+            case functionType => Failure(Exception(s"Cannot apply argument to non-function type: $functionType"))
+          }
+          applied = Value.Value.Apply(
+            nextReturnType,
+            function,
+            argument
+          )
+          fullyApplied <- if (tail.isEmpty) {
+            Try(applied)
+          } else {
+            applyArguments(applied, tail, nextReturnType.extractGenericTypeArgs.orElse(inferredGenericTypeArgs))
+          }
+        } yield
+          fullyApplied
+    }
   }
 }

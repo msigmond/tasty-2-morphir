@@ -15,8 +15,9 @@ object SelectMorph extends TreeResolver {
     sel match {
       case Select(qualifier, fieldName) if sel.symbol.flags.is(Flags.CaseAccessor) =>
         for {
-          returnType <- resolveType(sel, inferredGenericTypeArgs)
           subject <- expandSubTree(qualifier, inferredGenericTypeArgs = None)
+          maybeGenericTypeArgs = subject.extractType.toOption.flatMap(_.extractGenericTypeArgs)
+          returnType <- sel.symbol.denot.info.resultType.toType(maybeGenericTypeArgs.orElse(inferredGenericTypeArgs))
         } yield
           Value.Value.Field(
             returnType,
