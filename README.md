@@ -44,6 +44,11 @@ Arguments:
 1. Output path for the generated Morphir IR JSON
 2. One or more compiled Scala 3 `.tasty` files
 
+## Examples
+
+- `examples/CurrentSupportedExample.scala` shows the most complex concise Scala shape currently supported end-to-end.
+- Keep this example updated as translation support expands so it remains the quick reference for current capabilities.
+
 ## Current conversion behavior
 
 ### Supported types
@@ -150,7 +155,7 @@ The tests compare full generated JSON distributions directly, so Scala and Elm n
 ## Limitations
 
 - support is intentionally narrow and fail-fast
-- generic case classes are not supported
+- generic case classes are supported for the current narrow slice, including single-parameter data-only records and nested record references
 - methods on case classes are not part of case-class data conversion
 - many Scala constructs are still unsupported, including broader pattern-matching coverage
 
