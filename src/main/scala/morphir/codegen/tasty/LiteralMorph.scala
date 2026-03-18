@@ -9,49 +9,43 @@ import scala.quoted.Quotes
 import scala.util.{Failure, Success, Try}
 
 object LiteralMorph {
-  def toValue(lit: Literal[?])(using Quotes)(using Contexts.Context): Try[Value.Value.Literal[Unit, MorphType.Type[Unit]]] = {
+  def toLiteral(lit: Literal[?])(using Quotes)(using Contexts.Context): Try[(MorphType.Type[Unit], MorphLiteral.Literal)] =
     lit match {
       case Literal(Constant(value: Boolean)) =>
-        Success(
-          Value.Value.Literal(
-            StandardTypes.boolReference,
-            MorphLiteral.boolLiteral(value)
-          )
-        )
+        Success((StandardTypes.boolReference, MorphLiteral.boolLiteral(value)))
 
       case Literal(Constant(value: Int)) =>
-        Success(
-          Value.Value.Literal(
-            StandardTypes.intReference,
-            MorphLiteral.intLiteral(value)
-          )
-        )
+        Success((StandardTypes.intReference, MorphLiteral.intLiteral(value)))
 
       case Literal(Constant(value: Float)) =>
-        Success(
-          Value.Value.Literal(
-            StandardTypes.floatReference,
-            MorphLiteral.floatLiteral(value)
-          )
-        )
+        Success((StandardTypes.floatReference, MorphLiteral.floatLiteral(value)))
 
       case Literal(Constant(value: Double)) =>
-        Success(
-          Value.Value.Literal(
-            StandardTypes.floatReference,
-            MorphLiteral.floatLiteral(value)
-          )
-        )
+        Success((StandardTypes.floatReference, MorphLiteral.floatLiteral(value)))
 
       case Literal(Constant(value: String)) =>
-        Success(
-          Value.Value.Literal(
-            StandardTypes.stringReference,
-            MorphLiteral.stringLiteral(value)
-          )
-        )
+        Success((StandardTypes.stringReference, MorphLiteral.stringLiteral(value)))
 
       case Literal(Constant(x)) => Failure(Exception(s"Literal not supported: ${x.getClass}"))
     }
+
+  def toValue(lit: Literal[?])(using Quotes)(using Contexts.Context): Try[Value.Value.Literal[Unit, MorphType.Type[Unit]]] = {
+    for {
+      (morphType, morphLiteral) <- toLiteral(lit)
+    } yield
+      Value.Value.Literal(
+        morphType,
+        morphLiteral
+      )
   }
+
+  def toPattern(lit: Literal[?])(using Quotes)(using Contexts.Context): Try[Value.Pattern.LiteralPattern[MorphType.Type[Unit]]] = {
+    for {
+      (morphType, morphLiteral) <- toLiteral(lit)
+    } yield
+      Value.Pattern.LiteralPattern(
+        morphType,
+        morphLiteral
+      )
+    }
 }

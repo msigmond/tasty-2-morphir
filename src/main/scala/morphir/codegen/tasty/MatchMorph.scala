@@ -65,6 +65,9 @@ object MatchMorph extends TreeResolver {
       case Typed(expr, _) =>
         toPattern(expr, expectedType)
 
+      case lit: Literal[?] =>
+        LiteralMorph.toPattern(lit)
+
       case UnApply(fun, _, patterns) =>
         for {
           constructorFQName <- toOptionConstructorFQName(fun)

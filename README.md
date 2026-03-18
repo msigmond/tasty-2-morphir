@@ -70,7 +70,7 @@ Arguments:
 - comparison operators: `<`, `<=`, `>`, `>=`
 - function application
 - `if / else`
-- `Option` pattern matching with `Some(x)` / `None`
+- pattern matching for `Option` constructors and supported scalar literal patterns
 - local `val` bindings and block expressions
 - case-class field access, including nested record access
 
@@ -106,16 +106,16 @@ This is the current ordered plan for the next **5** supportable `tastyToMorphirI
 
 Keep this section updated as the roadmap changes.
 
-1. **Broader pattern matching**  
-   Expand beyond the current narrow `Option` match support with the next-lowest-risk pattern forms that still have clear Elm-baseline parity.
-2. **Tuple support**  
+1. **Tuple support**  
    Add tuple types and tuple expressions first, then extend into tuple destructuring or tuple-pattern coverage where the generated Morphir shape is stable.
-3. **Richer generic case classes**  
+2. **Richer generic case classes**  
    Broaden the current narrow generic-record slice with multiple type parameters and deeper generic substitution through nested field access.
-4. **Simple user-defined ADTs**  
+3. **Simple user-defined ADTs**  
    Add a narrow first slice of sealed-trait or enum constructor lowering that can be validated against Elm custom-type baselines.
-5. **More literal widening**  
+4. **More literal widening**  
    Continue the literal-expansion path beyond `Double`, starting with candidates like `Long` and `Char` where the Morphir target type is clear.
+5. **Broad collections support**  
+   Add a narrow first slice of collection support, starting with list-oriented operations whose Elm and Morphir shapes are already well understood.
 
 ## Test suite
 
@@ -174,7 +174,7 @@ The tests compare full generated JSON distributions directly, so Scala and Elm n
 - support is intentionally narrow and fail-fast
 - generic case classes are supported for the current narrow slice, including single-parameter data-only records and nested record references
 - methods on case classes are not part of case-class data conversion
-- many Scala constructs are still unsupported, including broader pattern-matching coverage
+- many Scala constructs are still unsupported, including tuple lowering, broader ADTs, and collection support
 
 ## Cleanup
 
