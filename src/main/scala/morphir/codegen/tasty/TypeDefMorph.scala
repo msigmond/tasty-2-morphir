@@ -46,7 +46,7 @@ object TypeDefMorph extends TreeResolver {
 
   private def toCaseClassModule(td: Trees.TypeDef[?], name: String, preBody: List[?])(using Quotes)(using Contexts.Context): Try[(Module.ModuleName, AccessControlled.AccessControlled[Module.Definition[Unit, MorphType.Type[Unit]]])] = {
     for {
-      typeAlias <- getTypeAlias(preBody)
+      typeAlias <- getTypeAlias(td, preBody)
     } yield {
       val typeName = Name.fromString(name)
       val moduleName = Path.fromList(List(typeName))
@@ -62,7 +62,7 @@ object TypeDefMorph extends TreeResolver {
     }
   }
 
-  private def getTypeAlias(preBody: List[?])(using Quotes)(using Contexts.Context): Try[AccessControlled.AccessControlled[Documented.Documented[morphir.ir.Type.Definition[Unit]]]] = {
+  private def getTypeAlias(td: Trees.TypeDef[?], preBody: List[?])(using Quotes)(using Contexts.Context): Try[AccessControlled.AccessControlled[Documented.Documented[morphir.ir.Type.Definition[Unit]]]] = {
     val listOfTries: List[Try[morphir.ir.Type.Field[Unit]]] =
       preBody.collect {
         case vd: Trees.ValDef[?] if vd.symbol.flags.is(Flags.CaseAccessor) =>
@@ -73,11 +73,9 @@ object TypeDefMorph extends TreeResolver {
 
     listOfTries.toTryList.map { fields =>
       val typeParams =
-        fields
-          .flatMap(field => collectTypeVariables(field.tpe))
-          .foldLeft(List.empty[Name.Name]) { (acc, typeParam) =>
-            if acc.contains(typeParam) then acc else acc :+ typeParam
-          }
+        declaredTypeParameters(td).filter(typeParam =>
+          fields.exists(field => collectTypeVariables(field.tpe).contains(typeParam))
+        )
 
       val typeDef = morphir.ir.Type.TypeAliasDefinition(
         typeParams,
@@ -93,6 +91,9 @@ object TypeDefMorph extends TreeResolver {
       )
     }
   }
+
+  private def declaredTypeParameters(td: Trees.TypeDef[?])(using Quotes)(using Contexts.Context): List[Name.Name] =
+    td.symbol.typeParams.map(symbol => Name.fromString(symbol.name.show))
 
   private def collectTypeVariables(tpe: MorphType.Type[Unit]): List[Name.Name] =
     tpe match {

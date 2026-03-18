@@ -63,12 +63,7 @@ trait TreeResolver {
 
       Try {
         if typeOpt.typeSymbol.flags.is(Flags.Param) then
-          inferredGenericTypeArgs match {
-            case Some(typeArg :: Nil) =>
-              typeArg
-            case _ =>
-              MorphType.Variable((), Name.fromString(typeOpt.typeSymbol.name.show))
-          }
+          resolveTypeParameter(typeOpt.typeSymbol, inferredGenericTypeArgs)
         else {
         val symbolNamespace = resolveNamespace(typeOpt.typeSymbol)
         (symbolNamespace, maybeTypeArgs) match {
@@ -113,6 +108,23 @@ trait TreeResolver {
       .stripPrefix("Tuple")
       .toIntOption
       .contains(arity)
+
+  private def resolveTypeParameter(
+    typeParamSymbol: Symbols.Symbol,
+    inferredGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]]
+  )(using Quotes)(using Contexts.Context): MorphType.Type[Unit] =
+    inferredGenericTypeArgs
+      .flatMap { typeArgs =>
+        val ownerTypeParams = typeParamSymbol.owner.typeParams
+        val paramIndex = ownerTypeParams.indexWhere(_.name.show == typeParamSymbol.name.show)
+        typeArgs.lift(paramIndex)
+      }
+      .orElse {
+        inferredGenericTypeArgs.collect {
+          case typeArg :: Nil => typeArg
+        }
+      }
+      .getOrElse(MorphType.Variable((), Name.fromString(typeParamSymbol.name.show)))
 
   def expandSubTree(tree: Trees.Tree[?], inferredGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]])(using Quotes)(using Contexts.Context): Try[Value.Value[Unit, MorphType.Type[Unit]]] = {
     tree match {

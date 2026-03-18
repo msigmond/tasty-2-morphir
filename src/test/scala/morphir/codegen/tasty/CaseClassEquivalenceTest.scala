@@ -9,6 +9,8 @@ class CaseClassEquivalenceTest extends TastyEquivalenceSuite:
     arithmeticCase("maybeAge", "MaybeAge", "maybe-age"),
     arithmeticCase("mixedRecord", "MixedRecord", "mixed-record"),
     arithmeticCase("genericBox", "GenericBox", "generic-box"),
+    arithmeticCase("dualBox", "DualBox", "dual-box"),
+    arithmeticMultiFileCase("dualBoxContainer", List("DualBox", "DualBoxContainer"), "dual-box-container"),
     arithmeticMultiFileCase("nestedBoxContainer", List("GenericBox", "NestedBoxContainer"), "nested-box-container")
   )
 

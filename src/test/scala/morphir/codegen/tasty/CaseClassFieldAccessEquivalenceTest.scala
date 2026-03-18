@@ -7,6 +7,7 @@ class CaseClassFieldAccessEquivalenceTest extends TastyEquivalenceSuite:
     arithmeticMultiFileCase("personAgePlusOne", List("PersonAgePlusOne", "PersonAgePlusOneRecord"), "person-age-plus-one"),
     arithmeticMultiFileCase("accountBalanceWithFee", List("AccountBalanceWithFee", "AccountBalanceWithFeeRecord"), "account-balance-with-fee"),
     arithmeticMultiFileCase("maybeAgeSelection", List("MaybeAgeSelection", "MaybeAgeSelectionRecord"), "maybe-age-selection"),
+    arithmeticMultiFileCase("dualBoxRightValue", List("DualBox", "DualBoxContainer", "DualBoxRightValue"), "dual-box-right-value"),
     arithmeticMultiFileCase("nestedBoxValue", List("GenericBox", "NestedBoxContainer", "NestedBoxValue"), "nested-box-value")
   )
 
