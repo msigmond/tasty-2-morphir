@@ -100,6 +100,23 @@ the converter:
 
 Unrelated package roots still fail fast.
 
+## Upcoming feature roadmap
+
+This is the current ordered plan for the next **5** supportable `tastyToMorphirIR` features.
+
+Keep this section updated as the roadmap changes.
+
+1. **Broader pattern matching**  
+   Expand beyond the current narrow `Option` match support with the next-lowest-risk pattern forms that still have clear Elm-baseline parity.
+2. **Tuple support**  
+   Add tuple types and tuple expressions first, then extend into tuple destructuring or tuple-pattern coverage where the generated Morphir shape is stable.
+3. **Richer generic case classes**  
+   Broaden the current narrow generic-record slice with multiple type parameters and deeper generic substitution through nested field access.
+4. **Simple user-defined ADTs**  
+   Add a narrow first slice of sealed-trait or enum constructor lowering that can be validated against Elm custom-type baselines.
+5. **More literal widening**  
+   Continue the literal-expansion path beyond `Double`, starting with candidates like `Long` and `Char` where the Morphir target type is clear.
+
 ## Test suite
 
 The repository has a fixture-driven MUnit test suite under `src/test/scala/morphir/codegen/tasty/`.
