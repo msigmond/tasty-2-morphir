@@ -29,6 +29,16 @@ object ApplyMorph extends TreeResolver {
         } yield
           theApply
 
+      case Trees.Apply(fun: Trees.TypeApply[?], args) if isTupleApply(fun, args.size) =>
+        for {
+          returnType <- resolveType(apl, inferredGenericTypeArgs)
+          elements <- args.map(expandSubTree(_, inferredGenericTypeArgs)).toTryList
+        } yield
+          Value.Value.Tuple(
+            returnType,
+            elements
+          )
+
       case Trees.Apply(fun: Trees.TypeApply[?], args) =>
         for {
           returnType <- resolveType(apl, inferredGenericTypeArgs)
@@ -146,4 +156,17 @@ object ApplyMorph extends TreeResolver {
           fullyApplied
     }
   }
+
+  private def isTupleApply(fun: Trees.TypeApply[?], arity: Int)(using Quotes)(using Contexts.Context): Boolean =
+    fun match {
+      case Trees.TypeApply(Trees.Select(id: Trees.Ident[?], methodName), _) if methodName.show == "apply" =>
+        resolveNamespace(id.symbol) match {
+          case tupleName :: "scala" :: Nil =>
+            tupleName.stripPrefix("Tuple").toIntOption.contains(arity)
+          case _ =>
+            false
+        }
+      case _ =>
+        false
+    }
 }

@@ -60,6 +60,7 @@ Arguments:
 - `String`
 - `BigDecimal`
 - `Option[T]`
+- Scala tuples, currently the direct `(A, B)` value/type slice
 - Scala `case class` data fields, including generic single-parameter and nested record references
 
 ### Supported expressions
@@ -71,6 +72,7 @@ Arguments:
 - function application
 - `if / else`
 - pattern matching for `Option` constructors and supported scalar literal patterns
+- tuple literals and tuple-typed pass-through values
 - local `val` bindings and block expressions
 - case-class field access, including nested record access
 
@@ -80,6 +82,7 @@ Arguments:
 - `BigDecimal` arithmetic and comparison map to Morphir decimal SDK functions
 - Scala `BigDecimal /` maps to `morphir.SDK.decimal.div.unsafe`
 - Scala `Double` maps to Morphir `float`
+- Scala `TupleN` maps to Morphir tuple types and tuple values
 - Scala case classes are emitted as Morphir `type alias` records
 - generic case-class fields map to Morphir type variables when the generic parameter is preserved
 
@@ -106,16 +109,16 @@ This is the current ordered plan for the next **5** supportable `tastyToMorphirI
 
 Keep this section updated as the roadmap changes.
 
-1. **Tuple support**  
-   Add tuple types and tuple expressions first, then extend into tuple destructuring or tuple-pattern coverage where the generated Morphir shape is stable.
-2. **Richer generic case classes**  
+1. **Richer generic case classes**  
    Broaden the current narrow generic-record slice with multiple type parameters and deeper generic substitution through nested field access.
-3. **Simple user-defined ADTs**  
+2. **Simple user-defined ADTs**  
    Add a narrow first slice of sealed-trait or enum constructor lowering that can be validated against Elm custom-type baselines.
-4. **More literal widening**  
+3. **More literal widening**  
    Continue the literal-expansion path beyond `Double`, starting with candidates like `Long` and `Char` where the Morphir target type is clear.
-5. **Broad collections support**  
+4. **Broad collections support**  
    Add a narrow first slice of collection support, starting with list-oriented operations whose Elm and Morphir shapes are already well understood.
+5. **Case-class methods**  
+   Add a narrow slice of methods defined on case classes when they can be lowered cleanly without breaking the current data-alias model.
 
 ## Test suite
 
@@ -174,7 +177,7 @@ The tests compare full generated JSON distributions directly, so Scala and Elm n
 - support is intentionally narrow and fail-fast
 - generic case classes are supported for the current narrow slice, including single-parameter data-only records and nested record references
 - methods on case classes are not part of case-class data conversion
-- many Scala constructs are still unsupported, including tuple lowering, broader ADTs, and collection support
+- many Scala constructs are still unsupported, including tuple destructuring, broader ADTs, and collection support
 
 ## Cleanup
 

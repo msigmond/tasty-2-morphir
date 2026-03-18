@@ -86,6 +86,8 @@ trait TreeResolver {
             StandardTypes.decimalReference
           case ("BigDecimal" :: "package" :: "scala" :: Nil, _) => // type alias to scala.math.BigDecimal
             StandardTypes.decimalReference
+          case (tupleName :: "scala" :: Nil, Some(typeArgs)) if isTupleTypeName(tupleName, typeArgs.size) =>
+            MorphType.Tuple((), typeArgs)
           case ("Option" :: "scala" :: Nil, Some(typeArgs)) if typeArgs.size == 1 =>
             StandardTypes.maybeReference(typeArgs)
           case ("Some" :: "scala" :: Nil, Some(typeArgs)) if typeArgs.size == 1 =>
@@ -105,6 +107,12 @@ trait TreeResolver {
   extension (morphirType: MorphType.Type[Unit])
     def extractGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]] =
       Some(morphirType).collect { case MorphType.Reference(_, _, types) if types.nonEmpty => types }
+
+  private def isTupleTypeName(typeName: String, arity: Int): Boolean =
+    typeName
+      .stripPrefix("Tuple")
+      .toIntOption
+      .contains(arity)
 
   def expandSubTree(tree: Trees.Tree[?], inferredGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]])(using Quotes)(using Contexts.Context): Try[Value.Value[Unit, MorphType.Type[Unit]]] = {
     tree match {

@@ -70,6 +70,7 @@ object MorphUtils {
       case Value.Value.IfThenElse(t, _, _, _) => Success(t)
       case Value.Value.LetDefinition(t, _, _, _) => Success(t)
       case Value.Value.PatternMatch(t, _, _) => Success(t)
+      case Value.Value.Tuple(t, _) => Success(t)
       case x => Failure(UnsupportedOperationException(s"Value type is not supported: ${x.getClass}"))
     }
 
