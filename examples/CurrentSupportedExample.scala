@@ -68,6 +68,12 @@ object CurrentSupportedExample:
       case Reward.Bonus(_) => 'B'
       case Reward.Grade(mark) => mark
 
+  def floatBand(value: Float): Int =
+    value match
+      case 1.5f => 10
+      case 2.5f => 20
+      case _ => 0
+
   def defaultThresholds: List[Int] =
     List(10, 20)
 

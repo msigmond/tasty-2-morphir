@@ -53,6 +53,7 @@ class SupportedFunctionEquivalenceTest extends TastyEquivalenceSuite:
     arithmeticCase("maybePositive", "MaybePositive", "maybe-positive"),
     arithmeticCase("booleanLiteralMatch", "BooleanLiteralMatch", "boolean-literal-match"),
     arithmeticCase("intLiteralMatch", "IntLiteralMatch", "int-literal-match"),
+    arithmeticCase("floatLiteralMatch", "FloatLiteralMatch", "float-literal-match"),
     arithmeticCase("stringLiteralMatch", "StringLiteralMatch", "string-literal-match"),
     arithmeticCase("maybeMatchDefault", "MaybeMatchDefault", "maybe-match-default"),
     arithmeticCase("maybeMatchIncrement", "MaybeMatchIncrement", "maybe-match-increment"),
