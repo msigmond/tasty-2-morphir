@@ -53,6 +53,7 @@ object TypeDefMorph extends TreeResolver {
   private def toCaseClassModule(td: Trees.TypeDef[?], name: String, preBody: List[?])(using Quotes)(using Contexts.Context): Try[(Module.ModuleName, AccessControlled.AccessControlled[Module.Definition[Unit, MorphType.Type[Unit]]])] = {
     for {
       typeAlias <- getTypeAlias(td, preBody)
+      values <- getCaseClassValues(td, preBody)
     } yield {
       val typeName = Name.fromString(name)
       val moduleName = Path.fromList(List(typeName))
@@ -60,7 +61,7 @@ object TypeDefMorph extends TreeResolver {
         access = AccessControlled.Access.Public,
         value = Module.Definition(
           types = Dict.empty.updated(typeName, typeAlias),
-          values = Dict.empty[Name.Name, AccessControlled.AccessControlled[Documented.Documented[Value.Definition[Unit, MorphType.Type[Unit]]]]],
+          values = values,
           doc = None
         )
       )
@@ -179,6 +180,38 @@ object TypeDefMorph extends TreeResolver {
           case (acc, (valueName, valueDefinition)) => acc.updated(valueName, valueDefinition)
         }
     )
+  }
+
+  private def getCaseClassValues(
+    td: Trees.TypeDef[?],
+    preBody: List[?]
+  )(using Quotes)(using Contexts.Context): Try[Dict.Dict[Name.Name, AccessControlled.AccessControlled[Documented.Documented[Value.Definition[Unit, MorphType.Type[Unit]]]]]] =
+    for {
+      ownerType <- td.symbol.typeRef.toType(inferredGenericTypeArgs = None)
+      values <- preBody.collect {
+        case dd: Trees.DefDef[?] if isSupportedCaseMethod(dd) =>
+          DefDefMorph.toCaseMethodValue(dd, ownerType)
+      }.toTryList
+    } yield
+      values
+        .zipWithIndex
+        .map { case ((valueName, accessControlled), valueIndex) =>
+          (valueName, normalizeLocalLetTypes(accessControlled, valueIndex))
+        }
+        .sortBy { case (valueName, _) => valueName.mkString(".") }
+        .foldLeft(ListMap.empty[Name.Name, AccessControlled.AccessControlled[Documented.Documented[Value.Definition[Unit, MorphType.Type[Unit]]]]]) {
+          case (acc, (valueName, valueDefinition)) => acc.updated(valueName, valueDefinition)
+        }
+
+  private def isSupportedCaseMethod(dd: Trees.DefDef[?])(using Quotes)(using Contexts.Context): Boolean = {
+    val name = dd.name.show
+    val generatedPrefixes = List("copy", "product", "_")
+    val generatedNames = Set("canEqual", "equals", "hashCode", "toString", "writeReplace")
+
+    !dd.symbol.flags.is(Flags.Synthetic) &&
+    !dd.symbol.flags.is(Flags.CaseAccessor) &&
+    !generatedPrefixes.exists(name.startsWith) &&
+    !generatedNames.contains(name)
   }
 
   private def normalizeLocalLetTypes(

@@ -5,7 +5,10 @@ enum Tier:
 
 case class DualBox[A, B](right: B, left: A)
 
-case class Person(age: Option[Long], bonus: Long)
+case class Person(age: Option[Long], bonus: Long):
+  def normalizedBonus: Long =
+    if bonus > 0L then bonus + 1L
+    else bonus
 
 case class Envelope[A, B](box: DualBox[A, B], fee: Long)
 
@@ -21,7 +24,7 @@ object CurrentSupportedExample:
         case Tier.Vip => 10L
         case Tier.Plus => 5L
 
-    val withBonus = age + input.box.left.bonus + tierBonus
+    val withBonus = age + input.box.left.normalizedBonus + tierBonus
 
     val finalScore =
       if input.fee > 0L then withBonus - input.fee
