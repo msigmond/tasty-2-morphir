@@ -67,6 +67,9 @@ object CurrentSupportedExample:
   def defaultThresholds: List[Int] =
     List(10, 20)
 
+  def thresholdGroups: List[List[Int]] =
+    List(List(10, 20), List(30))
+
   def keepsReward(person: Person, reward: Reward): Reward =
     if person.isAtLeast(10L) then reward
     else Reward.Bonus(0)
