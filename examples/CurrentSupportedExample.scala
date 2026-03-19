@@ -100,6 +100,14 @@ object CurrentSupportedExample:
     triple match
       case (first, _, _) => first
 
+  def firstOfQuadruple(quadruple: (Int, String, Boolean, Float)): Int =
+    quadruple match
+      case (first, _, _, _) => first
+
+  def sumQuadruple(quadruple: (Int, Int, Int, Int)): Int =
+    val (w, x, y, z) = quadruple
+    w + x + y + z
+
   def paletteIntensity(palette: Palette): Int =
     palette match
       case Palette.Named(_, intensity, _) => intensity
