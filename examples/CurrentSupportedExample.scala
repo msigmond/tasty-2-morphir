@@ -63,3 +63,7 @@ object CurrentSupportedExample:
   def keepsReward(person: Person, reward: Reward): Reward =
     if person.isAtLeast(10L) then reward
     else Reward.Bonus(0)
+
+  def sumPair(pair: (Int, Int)): Int =
+    val (left, right) = pair
+    left + right
