@@ -7,6 +7,10 @@ enum Reward:
   case Bonus(points: Int)
   case Grade(mark: Char)
 
+enum Palette:
+  case Named(label: String, intensity: Int)
+  case Rgb(red: Int, green: Int)
+
 case class DualBox[A, B](right: B, left: A)
 
 case class Person(age: Option[Long], bonus: Long):
@@ -67,3 +71,8 @@ object CurrentSupportedExample:
   def sumPair(pair: (Int, Int)): Int =
     val (left, right) = pair
     left + right
+
+  def paletteIntensity(palette: Palette): Int =
+    palette match
+      case Palette.Named(_, intensity) => intensity
+      case Palette.Rgb(red, green) => red + green

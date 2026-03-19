@@ -54,7 +54,8 @@ class SupportedFunctionEquivalenceTest extends TastyEquivalenceSuite:
     arithmeticCase("maybeMatchIncrement", "MaybeMatchIncrement", "maybe-match-increment"),
     arithmeticCase("maybeMatchMap", "MaybeMatchMap", "maybe-match-map"),
     arithmeticMultiFileCase("simpleColorAdt", List("Color", "MatchRed", "WrapRed"), "simple-color-adt"),
-    arithmeticMultiFileCase("colorWithValueAdt", List("ColorWithValue", "GetIntensity", "RedFortyTwo"), "color-with-value-adt")
+    arithmeticMultiFileCase("colorWithValueAdt", List("ColorWithValue", "GetIntensity", "RedFortyTwo"), "color-with-value-adt"),
+    arithmeticMultiFileCase("colorWithTwoValuesAdt", List("ColorWithTwoValues", "GetNamedIntensity", "NamedRed"), "color-with-two-values-adt")
   )
 
   registerEquivalenceCases(equivalenceCases)(
