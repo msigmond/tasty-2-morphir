@@ -6,6 +6,7 @@ class CaseClassEquivalenceTest extends TastyEquivalenceSuite:
   private val cases = List(
     arithmeticCase("personBasic", "PersonBasic", "person-basic"),
     arithmeticCase("personWithMethods", "PersonWithMethods", "person-with-methods"),
+    arithmeticCase("personWithAgeCheck", "PersonWithAgeCheck", "person-with-age-check"),
     arithmeticCase("accountBalance", "AccountBalance", "account-balance"),
     arithmeticCase("maybeAge", "MaybeAge", "maybe-age"),
     arithmeticCase("mixedRecord", "MixedRecord", "mixed-record"),

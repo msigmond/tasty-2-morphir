@@ -14,6 +14,9 @@ case class Person(age: Option[Long], bonus: Long):
     if bonus > 0L then bonus + 1L
     else bonus
 
+  def isAtLeast(threshold: Long): Boolean =
+    bonus >= threshold
+
 case class Envelope[A, B](box: DualBox[A, B], fee: Long)
 
 object CurrentSupportedExample:
@@ -56,3 +59,7 @@ object CurrentSupportedExample:
 
   def defaultThresholds: List[Int] =
     List(10, 20)
+
+  def keepsReward(person: Person, reward: Reward): Reward =
+    if person.isAtLeast(10L) then reward
+    else Reward.Bonus(0)
