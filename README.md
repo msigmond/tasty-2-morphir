@@ -69,7 +69,7 @@ Arguments:
 
 ### Supported expressions
 
-- literals, including `Boolean`, `Long`, and `Char`
+- literals, including `Boolean`, `Long`, `Char`, and direct `String` literals
 - arithmetic operators: `+`, `-`, `*`, `/`
 - boolean operators: `&&`, `||`
 - comparison operators: `<`, `<=`, `>`, `>=`
@@ -124,16 +124,16 @@ This is the current ordered plan for the next **5** supportable `tastyToMorphirI
 
 Keep this section updated as the roadmap changes.
 
-1. **Broader literal widening**  
-   Build on the new `Char` slice only where the Morphir target type is explicit and exact Elm parity stays stable.
-2. **Broader collections support**  
+1. **Broader collections support**  
    Build on the new `List(...)` literal slice by adding more collection construction shapes or operations only where exact Elm parity remains stable.
-3. **Broader case-class methods**  
+2. **Broader case-class methods**  
    Build on the new single-explicit-parameter method slice by adding slightly richer method shapes only where full Elm parity remains exact.
-4. **Broader tuple destructuring**  
+3. **Broader tuple destructuring**  
    Build on the new tuple-match plus local-`val` destructuring slices by adding richer tuple-pattern shapes only where exact Elm parity stays stable.
-5. **Broader user-defined ADTs**  
+4. **Broader user-defined ADTs**  
    Build on the new two-argument enum-constructor slice by adding richer constructor families only where full Elm parity remains exact.
+5. **Broader literal widening**  
+   Build on the new direct `String` literal parity slice only where the Morphir target type stays explicit and exact Elm parity remains stable.
 
 ## Test suite
 
@@ -192,7 +192,7 @@ The tests compare full generated JSON distributions directly, so Scala and Elm n
 - support is intentionally narrow and fail-fast
 - generic case classes are supported for the current narrow slice, including multi-parameter data-only records and nested record references
 - user-defined ADTs are currently limited to Scala `enum` cases with the current direct-constructor slice up to two constructor arguments
-- additional literal widening currently covers `Long` and `Char`; other scalar literal expansions remain unsupported
+- additional literal widening currently covers `Long`, `Char`, and direct `String` literals; other scalar literal expansions remain unsupported
 - collection support is currently limited to `List[T]` types plus direct `List(...)` literals and empty-list values (`List()` and `Nil`)
 - case-class methods are currently limited to direct methods on the case class plus at most one explicit parameter
 - tuple destructuring is currently limited to the narrow tuple-match and local-`val` slices; broader tuple patterns are still unsupported

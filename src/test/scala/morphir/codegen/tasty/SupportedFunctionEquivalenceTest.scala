@@ -20,6 +20,7 @@ class SupportedFunctionEquivalenceTest extends TastyEquivalenceSuite:
     arithmeticCase("booleanOr", "BooleanOr", "boolean-or"),
     arithmeticCase("doubleLiteral", "DoubleLiteral", "double-literal"),
     arithmeticCase("charLiteral", "CharLiteral", "char-literal"),
+    arithmeticCase("stringLiteral", "StringLiteral", "string-literal"),
     arithmeticCase("doubleAdd", "DoubleAdd", "double-add"),
     arithmeticCase("longLiteral", "LongLiteral", "long-literal"),
     arithmeticCase("longAdd", "LongAdd", "long-add"),

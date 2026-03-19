@@ -24,6 +24,9 @@ case class Person(age: Option[Long], bonus: Long):
 case class Envelope[A, B](box: DualBox[A, B], fee: Long)
 
 object CurrentSupportedExample:
+  def greeting: String =
+    "hello"
+
   def adjustedScore(input: Envelope[Person, Tier], fallbackAge: Long): (Long, Tier) =
     val age =
       input.box.left.age match
