@@ -60,6 +60,7 @@ Arguments:
 - `String`
 - `BigDecimal`
 - `Option[T]`
+- narrow singleton Scala `enum` custom types
 - Scala tuples, currently the direct `(A, B)` value/type slice
 - Scala `case class` data fields, including generic multi-parameter and nested record references
 
@@ -72,6 +73,7 @@ Arguments:
 - function application
 - `if / else`
 - pattern matching for `Option` constructors and supported scalar literal patterns
+- constructor references and direct constructor pattern matches for the current singleton-`enum` slice
 - tuple literals and tuple-typed pass-through values
 - local `val` bindings and block expressions
 - case-class field access, including nested record access
@@ -84,6 +86,7 @@ Arguments:
 - Scala `Double` maps to Morphir `float`
 - Scala `TupleN` maps to Morphir tuple types and tuple values
 - Scala case classes are emitted as Morphir `type alias` records
+- narrow singleton Scala `enum` families are emitted as Morphir custom types
 - generic case-class fields preserve declared type-parameter order and substitute concrete nested type arguments during field access
 
 ### Multiple input `.tasty` files
@@ -109,16 +112,16 @@ This is the current ordered plan for the next **5** supportable `tastyToMorphirI
 
 Keep this section updated as the roadmap changes.
 
-1. **Simple user-defined ADTs**  
-   Add a narrow first slice of sealed-trait or enum constructor lowering that can be validated against Elm custom-type baselines.
-2. **More literal widening**  
+1. **More literal widening**  
    Continue the literal-expansion path beyond `Double`, starting with candidates like `Long` and `Char` where the Morphir target type is clear.
-3. **Broad collections support**  
+2. **Broad collections support**  
    Add a narrow first slice of collection support, starting with list-oriented operations whose Elm and Morphir shapes are already well understood.
-4. **Case-class methods**  
+3. **Case-class methods**  
    Add a narrow slice of methods defined on case classes when they can be lowered cleanly without breaking the current data-alias model.
-5. **Tuple destructuring**  
+4. **Tuple destructuring**  
    Extend tuple support from direct tuple values and types into tuple destructuring and tuple-pattern coverage where Elm-baseline parity is stable.
+5. **Richer user-defined ADTs**  
+   Extend the current singleton-`enum` slice toward constructor arguments and broader sealed families once exact Elm parity is established for those shapes.
 
 ## Test suite
 
@@ -176,8 +179,9 @@ The tests compare full generated JSON distributions directly, so Scala and Elm n
 
 - support is intentionally narrow and fail-fast
 - generic case classes are supported for the current narrow slice, including multi-parameter data-only records and nested record references
+- user-defined ADTs are currently limited to singleton Scala `enum` cases with direct constructor references and direct constructor matches
 - methods on case classes are not part of case-class data conversion
-- many Scala constructs are still unsupported, including tuple destructuring, broader ADTs, and collection support
+- many Scala constructs are still unsupported, including tuple destructuring, broader ADTs with constructor arguments, and collection support
 
 ## Cleanup
 

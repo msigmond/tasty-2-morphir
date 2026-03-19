@@ -8,7 +8,7 @@ import morphir.sdk.{Dict, List as MorphList}
 
 import scala.quoted.*
 import scala.collection.immutable.ListMap
-import scala.util.{Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 object TypeDefMorph extends TreeResolver {
 
@@ -20,12 +20,18 @@ object TypeDefMorph extends TreeResolver {
       case Trees.TypeDef(name, Trees.Template(constructor, parentsOrDerived, self, preBody: List[?])) if td.symbol.flags.is(Flags.Case) =>
         toCaseClassModule(td, name.show, preBody)
 
+      case Trees.TypeDef(name, Trees.Template(constructor, parentsOrDerived, self, preBody: List[?])) if isEnumModule(td, preBody) =>
+        toEnumModule(name.show, preBody)
+
       case Trees.TypeDef(name, Trees.Template(constructor, parentsOrDerived, self, preBody: List[?])) =>
         toObjectModule(name.show, preBody)
 
       case _ => Failure(Exception("TypeDef could not be processed"))
     }
   }
+
+  private def isEnumModule(td: Trees.TypeDef[?], preBody: List[?])(using Quotes)(using Contexts.Context): Boolean =
+    td.symbol.flags.is(Flags.Module) && enumConstructorNames(preBody).nonEmpty
 
   private def toObjectModule(name: String, preBody: List[?])(using Quotes)(using Contexts.Context): Try[(Module.ModuleName, AccessControlled.AccessControlled[Module.Definition[Unit, MorphType.Type[Unit]]])] = {
     for {
@@ -62,6 +68,43 @@ object TypeDefMorph extends TreeResolver {
     }
   }
 
+  private def toEnumModule(name: String, preBody: List[?])(using Quotes)(using Contexts.Context): Try[(Module.ModuleName, AccessControlled.AccessControlled[Module.Definition[Unit, MorphType.Type[Unit]]])] = {
+    val typeName = Name.fromString(name)
+    val constructors =
+      enumConstructorNames(preBody)
+        .sortBy(_.mkString("."))
+        .foldLeft(Dict.empty[Name.Name, MorphType.ConstructorArgs[Unit]]) { case (acc, ctorName) =>
+          acc.updated(ctorName, List.empty)
+        }
+
+    val typeDef: AccessControlled.AccessControlled[Documented.Documented[morphir.ir.Type.Definition[Unit]]] =
+      AccessControlled.AccessControlled(
+        access = AccessControlled.Access.Public,
+        value = Documented.Documented(
+          doc = "",
+          value = MorphType.CustomTypeDefinition(
+            List.empty,
+            AccessControlled.AccessControlled(
+              access = AccessControlled.Access.Public,
+              value = constructors
+            )
+          )
+        )
+      )
+
+    val moduleName = Path.fromList(List(typeName))
+    val moduleDef = AccessControlled.AccessControlled(
+      access = AccessControlled.Access.Public,
+      value = Module.Definition(
+        types = Dict.empty.updated(typeName, typeDef),
+        values = Dict.empty[Name.Name, AccessControlled.AccessControlled[Documented.Documented[Value.Definition[Unit, MorphType.Type[Unit]]]]],
+        doc = None
+      )
+    )
+
+    Success(moduleName, moduleDef)
+  }
+
   private def getTypeAlias(td: Trees.TypeDef[?], preBody: List[?])(using Quotes)(using Contexts.Context): Try[AccessControlled.AccessControlled[Documented.Documented[morphir.ir.Type.Definition[Unit]]]] = {
     val listOfTries: List[Try[morphir.ir.Type.Field[Unit]]] =
       preBody.collect {
@@ -94,6 +137,13 @@ object TypeDefMorph extends TreeResolver {
 
   private def declaredTypeParameters(td: Trees.TypeDef[?])(using Quotes)(using Contexts.Context): List[Name.Name] =
     td.symbol.typeParams.map(symbol => Name.fromString(symbol.name.show))
+
+  private def enumConstructorNames(preBody: List[?])(using Quotes)(using Contexts.Context): List[Name.Name] =
+    preBody.collect {
+      case vd: Trees.ValDef[?]
+          if vd.symbol.flags.is(Flags.Case) && !vd.name.show.startsWith("$") =>
+        Name.fromString(vd.name.show)
+    }
 
   private def collectTypeVariables(tpe: MorphType.Type[Unit]): List[Name.Name] =
     tpe match {

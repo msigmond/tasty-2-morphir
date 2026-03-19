@@ -1,7 +1,7 @@
 package morphir.codegen.tasty
 
 import dotty.tools.dotc.ast.Trees.*
-import dotty.tools.dotc.core.Contexts
+import dotty.tools.dotc.core.{Contexts, Flags}
 import morphir.codegen.tasty.MorphUtils.*
 import morphir.ir.{FQName, Name, Value, Type as MorphType}
 import morphir.sdk.List as MorphList
@@ -88,6 +88,15 @@ object MatchMorph extends TreeResolver {
           )
         )
 
+      case sel: Select[?] if isEnumConstructor(sel) =>
+        toConstructorFQName(sel.symbol).map { constructorFQName =>
+          Value.Pattern.ConstructorPattern(
+            expectedType,
+            constructorFQName,
+            List.empty
+          )
+        }
+
       case x =>
         Failure(NotImplementedError(s"Pattern is not supported: ${x.getClass}"))
     }
@@ -135,4 +144,7 @@ object MatchMorph extends TreeResolver {
 
   private def maybeConstructor(localName: String): FQName.FQName =
     FQName.fqn("morphir.SDK")("maybe")(localName)
+
+  private def isEnumConstructor(sel: Select[?])(using Quotes)(using Contexts.Context): Boolean =
+    sel.symbol.flags.is(Flags.Case) && !sel.symbol.flags.is(Flags.CaseAccessor)
 }

@@ -1,5 +1,8 @@
 package examples
 
+enum Tier:
+  case Plus, Vip
+
 case class DualBox[A, B](right: B, left: A)
 
 case class Person(age: Option[Int], bonus: Int)
@@ -7,7 +10,7 @@ case class Person(age: Option[Int], bonus: Int)
 case class Envelope[A, B](box: DualBox[A, B], fee: Int)
 
 object CurrentSupportedExample:
-  def adjustedScore(input: Envelope[Person, String], fallbackAge: Int): (Int, String) =
+  def adjustedScore(input: Envelope[Person, Tier], fallbackAge: Int): (Int, Tier) =
     val age =
       input.box.left.age match
         case Some(value) => value
@@ -15,9 +18,8 @@ object CurrentSupportedExample:
 
     val tierBonus =
       input.box.right match
-        case "vip" => 10
-        case "plus" => 5
-        case _ => 0
+        case Tier.Vip => 10
+        case Tier.Plus => 5
 
     val withBonus = age + input.box.left.bonus + tierBonus
 
@@ -25,4 +27,8 @@ object CurrentSupportedExample:
       if input.fee > 0 then withBonus - input.fee
       else withBonus
 
-    (finalScore, input.box.right)
+    val finalTier =
+      if finalScore > 20 then Tier.Vip
+      else input.box.right
+
+    (finalScore, finalTier)

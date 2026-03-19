@@ -13,6 +13,16 @@ object SelectMorph extends TreeResolver {
 
   def toValue(sel: Select[?], inferredGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]])(using Quotes)(using Contexts.Context): Try[Value.Value[Unit, MorphType.Type[Unit]]] = {
     sel match {
+      case Select(_, _) if isEnumConstructor(sel) =>
+        for {
+          returnType <- resolveType(sel, inferredGenericTypeArgs)
+          constructor <- toConstructorFQName(sel.symbol)
+        } yield
+          Value.Value.Constructor(
+            returnType,
+            constructor
+          )
+
       case Select(qualifier, fieldName) if sel.symbol.flags.is(Flags.CaseAccessor) =>
         for {
           subject <- expandSubTree(qualifier, inferredGenericTypeArgs = None)
@@ -44,4 +54,7 @@ object SelectMorph extends TreeResolver {
           )
     }
   }
+
+  private def isEnumConstructor(sel: Select[?])(using Quotes)(using Contexts.Context): Boolean =
+    sel.symbol.flags.is(Flags.Case) && !sel.symbol.flags.is(Flags.CaseAccessor)
 }

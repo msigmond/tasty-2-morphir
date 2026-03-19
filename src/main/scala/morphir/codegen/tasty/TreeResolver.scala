@@ -142,4 +142,12 @@ trait TreeResolver {
       case x => Failure(Exception(s"Type not supported: ${x.getClass}"))
     }
   }
+
+  protected def toConstructorFQName(symbol: Symbols.Symbol)(using Quotes)(using Contexts.Context): Try[FQName.FQName] =
+    resolveNamespace(symbol) match {
+      case localName :: moduleName :: packageName if packageName.nonEmpty && !packageName.contains("scala") =>
+        Success(FQName.fqn(packageName.reverse.mkString("."))(moduleName)(localName))
+      case x =>
+        Failure(Exception(s"Could not resolve constructor FQName from: $x"))
+    }
 }
