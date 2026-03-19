@@ -77,6 +77,7 @@ Arguments:
 - pattern matching for `Option` constructors and supported scalar literal patterns
 - constructor references and direct constructor pattern matches for the current singleton-`enum` slice
 - tuple literals and tuple-typed pass-through values
+- narrow tuple destructuring in `match` expressions for tuple element capture
 - local `val` bindings and block expressions
 - case-class field access, including nested record access
 - narrow parameterless methods defined directly on case classes
@@ -119,16 +120,16 @@ This is the current ordered plan for the next **5** supportable `tastyToMorphirI
 
 Keep this section updated as the roadmap changes.
 
-1. **Tuple destructuring**  
-   Extend tuple support from direct tuple values and types into tuple destructuring and tuple-pattern coverage where Elm-baseline parity is stable.
-2. **Richer user-defined ADTs**  
+1. **Richer user-defined ADTs**  
    Extend the current singleton-`enum` slice toward constructor arguments and broader sealed families once exact Elm parity is established for those shapes.
-3. **Further literal widening**  
+2. **Further literal widening**  
    Continue beyond the new `Long` slice only where the Morphir target type is explicit, such as `Char` or other scalar literals with stable Elm parity.
-4. **Richer collections support**  
+3. **Richer collections support**  
    Extend the new empty-list slice toward populated list values and a narrow first set of list-oriented operations once exact Elm parity is established.
-5. **Broader case-class methods**  
+4. **Broader case-class methods**  
    Build on the new parameterless method slice by adding explicit method parameters or slightly richer method shapes only where full Elm parity remains exact.
+5. **Broader tuple destructuring**  
+   Build on the new tuple-match slice by adding more tuple arities, local `val` destructuring, or richer tuple-pattern shapes only where exact Elm parity stays stable.
 
 ## Test suite
 
@@ -190,7 +191,8 @@ The tests compare full generated JSON distributions directly, so Scala and Elm n
 - additional literal widening currently covers `Long`; literals like `Char` are still unsupported
 - collection support is currently limited to `List[T]` types plus empty-list values (`List()` and `Nil`)
 - case-class methods are currently limited to the narrow parameterless slice; explicit method parameters are still unsupported
-- many Scala constructs are still unsupported, including tuple destructuring, broader ADTs with constructor arguments, populated list values, and collection operations
+- tuple destructuring is currently limited to the narrow tuple-match slice; local `val` destructuring and broader tuple patterns are still unsupported
+- many Scala constructs are still unsupported, including broader ADTs with constructor arguments, populated list values, and collection operations
 
 ## Cleanup
 

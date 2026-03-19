@@ -40,3 +40,7 @@ object CurrentSupportedExample:
     input match
       case Some(values) => values
       case None => Nil
+
+  def projectTier(result: (Long, Tier)): Tier =
+    result match
+      case (_, tier) => tier

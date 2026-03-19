@@ -69,15 +69,21 @@ object MatchMorph extends TreeResolver {
         LiteralMorph.toPattern(lit)
 
       case UnApply(fun, _, patterns) =>
-        for {
-          constructorFQName <- toOptionConstructorFQName(fun)
-          constructorArgs <- toConstructorArgs(patterns, expectedType, constructorFQName)
-        } yield
-          Value.Pattern.ConstructorPattern(
-            expectedType,
-            constructorFQName,
-            constructorArgs
-          )
+        tupleElementTypes(expectedType) match {
+          case Some(elementTypes) if isTupleUnapply(fun, patterns.size) =>
+            toTuplePattern(patterns, expectedType, elementTypes)
+
+          case _ =>
+            for {
+              constructorFQName <- toOptionConstructorFQName(fun)
+              constructorArgs <- toConstructorArgs(patterns, expectedType, constructorFQName)
+            } yield
+              Value.Pattern.ConstructorPattern(
+                expectedType,
+                constructorFQName,
+                constructorArgs
+              )
+        }
 
       case Ident(name) if name.show == "None" =>
         Success(
@@ -100,6 +106,20 @@ object MatchMorph extends TreeResolver {
       case x =>
         Failure(NotImplementedError(s"Pattern is not supported: ${x.getClass}"))
     }
+
+  private def toTuplePattern(
+    patterns: List[Tree[?]],
+    expectedType: MorphType.Type[Unit],
+    elementTypes: List[MorphType.Type[Unit]]
+  )(using Quotes)(using Contexts.Context): Try[Value.Pattern.TuplePattern[MorphType.Type[Unit]]] =
+    if patterns.size != elementTypes.size then
+      Failure(NotImplementedError(s"Tuple pattern arity mismatch: expected ${elementTypes.size}, got ${patterns.size}"))
+    else
+      patterns.zip(elementTypes).map { case (pattern, elementType) =>
+        toPattern(pattern, elementType)
+      }.toTryList.map { elements =>
+        Value.Pattern.TuplePattern(expectedType, elements)
+      }
 
   private def toConstructorArgs(
     patterns: List[Tree[?]],
@@ -134,6 +154,20 @@ object MatchMorph extends TreeResolver {
         Failure(NotImplementedError("Sequence extractor patterns are not supported"))
       case x =>
         Failure(NotImplementedError(s"Pattern extractor is not supported: ${x.getClass}"))
+    }
+
+  private def isTupleUnapply(fun: Tree[?], arity: Int)(using Quotes)(using Contexts.Context): Boolean =
+    unwrapTypeApply(fun) match {
+      case Select(qualifier, name) =>
+        qualifier.symbol.name.show == s"Tuple$arity" && name.show == "unapply"
+      case _ =>
+        false
+    }
+
+  private def tupleElementTypes(expectedType: MorphType.Type[Unit]): Option[List[MorphType.Type[Unit]]] =
+    expectedType match {
+      case MorphType.Tuple(_, elementTypes) => Some(elementTypes)
+      case _ => None
     }
 
   private def unwrapTypeApply(tree: Tree[?]): Tree[?] =

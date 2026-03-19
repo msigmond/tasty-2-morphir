@@ -82,6 +82,8 @@ trait TreeResolver {
             StandardTypes.floatReference
           case ("String" :: "Predef" :: "scala" :: Nil, _) =>
             StandardTypes.stringReference
+          case ("String" :: "lang" :: "java" :: Nil, _) =>
+            StandardTypes.stringReference
           case ("BigDecimal" :: "math" :: "scala" :: Nil, _) =>
             StandardTypes.decimalReference
           case ("BigDecimal" :: "package" :: "scala" :: Nil, _) => // type alias to scala.math.BigDecimal
