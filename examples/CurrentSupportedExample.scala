@@ -8,8 +8,8 @@ enum Reward:
   case Grade(mark: Char)
 
 enum Palette:
-  case Named(label: String, intensity: Int)
-  case Rgb(red: Int, green: Int)
+  case Named(label: String, intensity: Int, priority: Int)
+  case Rgb(red: Int, green: Int, blue: Int)
 
 case class DualBox[A, B](right: B, left: A)
 
@@ -88,5 +88,5 @@ object CurrentSupportedExample:
 
   def paletteIntensity(palette: Palette): Int =
     palette match
-      case Palette.Named(_, intensity) => intensity
-      case Palette.Rgb(red, green) => red + green
+      case Palette.Named(_, intensity, _) => intensity
+      case Palette.Rgb(red, green, blue) => red + green + blue

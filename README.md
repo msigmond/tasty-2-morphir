@@ -76,7 +76,7 @@ Arguments:
 - function application
 - `if / else`
 - pattern matching for `Option` constructors and supported scalar literal patterns
-- constructor references, direct constructor application, and direct constructor pattern matches for the current narrow `enum` slice, including two-argument constructors
+- constructor references, direct constructor application, and direct constructor pattern matches for the current narrow `enum` slice, including flat three-argument constructors
 - tuple literals and tuple-typed pass-through values
 - narrow tuple destructuring in `match` expressions for tuple element capture, including flat 3-tuples
 - narrow tuple destructuring in local `val` bindings for direct tuple element capture, including flat 3-tuples
@@ -125,16 +125,16 @@ This is the current ordered plan for the next **5** supportable `tastyToMorphirI
 
 Keep this section updated as the roadmap changes.
 
-1. **Broader user-defined ADTs**  
-   Build on the new two-argument enum-constructor slice by adding richer constructor families only where full Elm parity remains exact.
-2. **Broader literal widening**  
+1. **Broader literal widening**  
    Build on the new direct `String` literal parity slice only where the Morphir target type stays explicit and exact Elm parity remains stable.
-3. **Broader collections support**  
+2. **Broader collections support**  
    Build on the new nested-list literal parity slice by adding more collection construction shapes or operations only where exact Elm parity remains stable.
-4. **Broader case-class methods**  
+3. **Broader case-class methods**  
    Build on the new richer one-explicit-parameter conditional-body slice by adding slightly more complex method shapes only where full Elm parity remains exact.
-5. **Broader tuple destructuring**  
+4. **Broader tuple destructuring**  
    Build on the new flat 3-tuple match and local-`val` parity slices by adding richer tuple-pattern shapes only where exact Elm parity stays stable.
+5. **Broader user-defined ADTs**  
+   Build on the new flat three-argument enum-constructor slice by adding richer constructor families only where full Elm parity remains exact.
 
 ## Test suite
 
@@ -192,7 +192,7 @@ The tests compare full generated JSON distributions directly, so Scala and Elm n
 
 - support is intentionally narrow and fail-fast
 - generic case classes are supported for the current narrow slice, including multi-parameter data-only records and nested record references
-- user-defined ADTs are currently limited to Scala `enum` cases with the current direct-constructor slice up to two constructor arguments
+- user-defined ADTs are currently limited to Scala `enum` cases with the current direct-constructor slice up to three constructor arguments
 - additional literal widening currently covers `Long`, `Char`, and direct `String` literals; other scalar literal expansions remain unsupported
 - collection support is currently limited to `List[T]` types plus direct `List(...)` literals, nested-list literals, and empty-list values (`List()` and `Nil`)
 - case-class methods are currently limited to direct methods on the case class plus at most one explicit parameter, with supported bodies staying within the current expression surface
