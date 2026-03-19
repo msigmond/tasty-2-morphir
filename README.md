@@ -62,7 +62,7 @@ Arguments:
 - `String`
 - `BigDecimal`
 - `Option[T]`
-- `List[T]` for the current narrow empty-list, direct `List(...)` literal, and nested-list literal slices
+- `List[T]` for the current narrow empty-list, direct `List(...)` literal, nested-list literal, and direct `length` slices
 - narrow Scala `enum` custom types, including direct constructor payloads up to the current two-argument slice
 - Scala tuples, currently the direct `(A, B)` value/type slice
 - Scala `case class` data fields, including generic multi-parameter and nested record references
@@ -86,6 +86,7 @@ Arguments:
 - empty list values via `List()` and `Nil`
 - populated list values via `List(...)`
 - nested list literals such as `List(List(1, 2), List(3))`
+- direct `List.length`
 
 ### Mapping notes
 
@@ -96,6 +97,7 @@ Arguments:
 - Scala `Double` maps to Morphir `float`
 - Scala `Char` maps to Morphir `char`
 - Scala `List[T]` maps to Morphir `morphir.SDK.list.list[T]`
+- Scala `List.length` maps to Morphir `morphir.SDK.list.length`
 - Scala `TupleN` maps to Morphir tuple types and tuple values
 - Scala case classes are emitted as Morphir `type alias` records
 - narrow case-class methods are emitted as module values with an explicit record receiver input
@@ -125,16 +127,16 @@ This is the current ordered plan for the next **5** supportable `tastyToMorphirI
 
 Keep this section updated as the roadmap changes.
 
-1. **Broader collections support**  
-   Build on the new nested-list literal parity slice by adding more collection construction shapes or operations only where exact Elm parity remains stable.
-2. **Broader case-class methods**  
+1. **Broader case-class methods**  
    Build on the new richer one-explicit-parameter conditional-body slice by adding slightly more complex method shapes only where full Elm parity remains exact.
-3. **Broader tuple destructuring**  
+2. **Broader tuple destructuring**  
    Build on the new flat 3-tuple match and local-`val` parity slices by adding richer tuple-pattern shapes only where exact Elm parity stays stable.
-4. **Broader user-defined ADTs**  
+3. **Broader user-defined ADTs**  
    Build on the new flat three-argument enum-constructor slice by adding richer constructor families only where full Elm parity remains exact.
-5. **Broader literal widening**  
+4. **Broader literal widening**  
    Build on the new float-literal-pattern parity slice only where the Morphir target type stays explicit and exact Elm parity remains stable.
+5. **Broader collections support**  
+   Build on the new direct-`List.length` parity slice by adding more collection operations only where exact Elm parity remains stable.
 
 ## Test suite
 

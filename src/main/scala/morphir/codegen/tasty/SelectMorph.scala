@@ -55,13 +55,13 @@ object SelectMorph extends TreeResolver {
           argument <- expandSubTree(qualifier, maybeGenericTypeArgs)
           argumentType <- argument.extractType
           function <- StandardFunctions.get(sel.symbol, returnType, argumentType)
+          appliedType <- function.extractType.flatMap {
+            case MorphType.Function(_, _, nextReturnType) => Try(nextReturnType)
+            case functionType => Try(throw Exception(s"Select did not resolve to an applicable function: $functionType"))
+          }
         } yield
           Value.Value.Apply(
-            MorphType.Function(
-              (),
-              argumentType,
-              returnType
-            ),
+            appliedType,
             function,
             argument
           )

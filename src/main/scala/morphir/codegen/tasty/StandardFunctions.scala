@@ -12,6 +12,12 @@ object StandardFunctions {
   private def isDecimalType(morphType: MorphType.Type[Unit]): Boolean =
     morphType == StandardTypes.decimalReference
 
+  private def isListType(morphType: MorphType.Type[Unit]): Boolean =
+    morphType match {
+      case MorphType.Reference(_, fQName, _) => fQName == FQName.fqn("morphir.SDK")("list")("list")
+      case _ => false
+    }
+
   def get(symbol: Symbols.Symbol, returnType: MorphType.Type[Unit], argumentType: MorphType.Type[Unit])(using Quotes)(using Contexts.Context): Try[Value.Value[Unit, MorphType.Type[Unit]]] = {
     get(symbol, returnType, Some(argumentType))
   }
@@ -55,6 +61,8 @@ object StandardFunctions {
 
   private def bySymbolNamespace(symbolNamespace: List[String], returnType: MorphType.Type[Unit], argumentType: MorphType.Type[Unit])(using Quotes)(using Contexts.Context): Try[Value.Value[Unit, MorphType.Type[Unit]]] =
     symbolNamespace match {
+      case "length" :: _ if isListType(argumentType) =>
+        Success(toUnaryFunctionReference(FQName.fqn("morphir.SDK")("list")("length"), returnType, argumentType))
       case "&&" :: _ => Success(toFunctionReference(FQName.fqn("morphir.SDK")("basics")("and"), returnType, argumentType))
       case "||" :: _ => Success(toFunctionReference(FQName.fqn("morphir.SDK")("basics")("or"), returnType, argumentType))
       case "/" :: "Int" :: "scala" :: Nil => Success(toFunctionReference(FQName.fqn("morphir.SDK")("basics")("integerDivide"), returnType, argumentType))
@@ -79,6 +87,17 @@ object StandardFunctions {
           argumentType,
           returnType
         )
+      ),
+      fQName
+    )
+  }
+
+  private def toUnaryFunctionReference(fQName: FQName.FQName, returnType: MorphType.Type[Unit], argumentType: MorphType.Type[Unit])(using Quotes)(using Contexts.Context): Value.Value.Reference[Unit, MorphType.Type[Unit]] = {
+    Value.Value.Reference(
+      MorphType.Function(
+        (),
+        argumentType,
+        returnType
       ),
       fQName
     )

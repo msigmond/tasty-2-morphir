@@ -27,6 +27,7 @@ class SupportedFunctionEquivalenceTest extends TastyEquivalenceSuite:
     arithmeticCase("listEmpty", "ListEmpty", "list-empty"),
     arithmeticCase("listLiteral", "ListLiteral", "list-literal"),
     arithmeticCase("nestedListLiteral", "NestedListLiteral", "nested-list-literal"),
+    arithmeticCase("listLength", "ListLength", "list-length"),
     arithmeticCase("tupleLiteral", "TupleLiteral", "tuple-literal"),
     arithmeticCase("tuplePassThrough", "TuplePassThrough", "tuple-pass-through"),
     arithmeticCase("extractFirst", "ExtractFirst", "extract-first"),

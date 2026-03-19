@@ -80,6 +80,9 @@ object CurrentSupportedExample:
   def thresholdGroups: List[List[Int]] =
     List(List(10, 20), List(30))
 
+  def thresholdCount(values: List[Int]): Int =
+    values.length
+
   def keepsReward(person: Person, reward: Reward): Reward =
     if person.adjustedBonus(10L) > 10L then reward
     else Reward.Bonus(0)
