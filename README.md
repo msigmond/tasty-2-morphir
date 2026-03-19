@@ -78,8 +78,8 @@ Arguments:
 - pattern matching for `Option` constructors and supported scalar literal patterns
 - constructor references, direct constructor application, and direct constructor pattern matches for the current narrow `enum` slice, including two-argument constructors
 - tuple literals and tuple-typed pass-through values
-- narrow tuple destructuring in `match` expressions for tuple element capture
-- narrow tuple destructuring in local `val` bindings for direct tuple element capture
+- narrow tuple destructuring in `match` expressions for tuple element capture, including flat 3-tuples
+- narrow tuple destructuring in local `val` bindings for direct tuple element capture, including flat 3-tuples
 - local `val` bindings and block expressions
 - case-class field access, including nested record access
 - narrow case-class methods defined directly on case classes, including the current single-explicit-parameter slice and richer supported `if`-based method bodies
@@ -125,16 +125,16 @@ This is the current ordered plan for the next **5** supportable `tastyToMorphirI
 
 Keep this section updated as the roadmap changes.
 
-1. **Broader tuple destructuring**  
-   Build on the new tuple-match plus local-`val` destructuring slices by adding richer tuple-pattern shapes only where exact Elm parity stays stable.
-2. **Broader user-defined ADTs**  
+1. **Broader user-defined ADTs**  
    Build on the new two-argument enum-constructor slice by adding richer constructor families only where full Elm parity remains exact.
-3. **Broader literal widening**  
+2. **Broader literal widening**  
    Build on the new direct `String` literal parity slice only where the Morphir target type stays explicit and exact Elm parity remains stable.
-4. **Broader collections support**  
+3. **Broader collections support**  
    Build on the new nested-list literal parity slice by adding more collection construction shapes or operations only where exact Elm parity remains stable.
-5. **Broader case-class methods**  
+4. **Broader case-class methods**  
    Build on the new richer one-explicit-parameter conditional-body slice by adding slightly more complex method shapes only where full Elm parity remains exact.
+5. **Broader tuple destructuring**  
+   Build on the new flat 3-tuple match and local-`val` parity slices by adding richer tuple-pattern shapes only where exact Elm parity stays stable.
 
 ## Test suite
 
@@ -196,7 +196,7 @@ The tests compare full generated JSON distributions directly, so Scala and Elm n
 - additional literal widening currently covers `Long`, `Char`, and direct `String` literals; other scalar literal expansions remain unsupported
 - collection support is currently limited to `List[T]` types plus direct `List(...)` literals, nested-list literals, and empty-list values (`List()` and `Nil`)
 - case-class methods are currently limited to direct methods on the case class plus at most one explicit parameter, with supported bodies staying within the current expression surface
-- tuple destructuring is currently limited to the narrow tuple-match and local-`val` slices; broader tuple patterns are still unsupported
+- tuple destructuring is currently limited to narrow flat tuple-match and local-`val` slices up to the current 3-tuple coverage; broader tuple patterns are still unsupported
 - many Scala constructs are still unsupported, including broader ADT families, collection operations, and richer tuple or case-method shapes
 
 ## Cleanup

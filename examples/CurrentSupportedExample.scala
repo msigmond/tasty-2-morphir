@@ -82,6 +82,10 @@ object CurrentSupportedExample:
     val (left, right) = pair
     left + right
 
+  def firstOfTriple(triple: (Int, String, Boolean)): Int =
+    triple match
+      case (first, _, _) => first
+
   def paletteIntensity(palette: Palette): Int =
     palette match
       case Palette.Named(_, intensity) => intensity
