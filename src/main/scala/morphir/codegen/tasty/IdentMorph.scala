@@ -26,6 +26,9 @@ object IdentMorph extends TreeResolver {
   }
 
   def toValue(id: Ident[?], inferredGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]] = None)(using Quotes)(using Contexts.Context): Try[Value.Value[Unit, MorphType.Type[Unit]]] = {
+    if isNilValue(id) then
+      toEmptyListValue(id, inferredGenericTypeArgs)
+    else
     id.typeOpt match {
       case Types.TermRef(prefix, sbl: Symbols.Symbol) =>
         for {
@@ -42,6 +45,30 @@ object IdentMorph extends TreeResolver {
           fun <- StandardFunctions.get(id.symbol, typ)
         } yield 
           fun
-    }
+      }
   }
+
+  private def toEmptyListValue(
+    id: Ident[?],
+    inferredGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]]
+  )(using Quotes)(using Contexts.Context): Try[Value.Value.List[Unit, MorphType.Type[Unit]]] =
+    for {
+      listType <- resolveType(id, inferredGenericTypeArgs).orElse {
+        inferredGenericTypeArgs match {
+          case Some(typeArgs) if typeArgs.size == 1 => Success(StandardTypes.listReference(typeArgs))
+          case _ => Failure(Exception("Could not resolve empty list type for Nil"))
+        }
+      }
+    } yield
+      Value.Value.List(
+        listType,
+        List.empty
+      )
+
+  private def isNilValue(id: Ident[?])(using Quotes)(using Contexts.Context): Boolean =
+    resolveNamespace(id.symbol) match {
+      case "Nil" :: "package" :: "scala" :: Nil => true
+      case "Nil" :: _ => true
+      case _ => false
+    }
 }

@@ -58,7 +58,10 @@ trait TreeResolver {
       val maybeTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]] =
         Option(typeOpt)
           .collect { case Types.AppliedType(_, args) => args }
-          .map(_.map(_.toType(inferredGenericTypeArgs = None)).collect { case Success(t) => t })
+          .flatMap { args =>
+            val resolvedArgs = args.map(_.toType(inferredGenericTypeArgs = None)).collect { case Success(t) => t }
+            Option.when(resolvedArgs.size == args.size)(resolvedArgs)
+          }
           .orElse(inferredGenericTypeArgs)
 
       Try {
@@ -85,6 +88,12 @@ trait TreeResolver {
             StandardTypes.decimalReference
           case (tupleName :: "scala" :: Nil, Some(typeArgs)) if isTupleTypeName(tupleName, typeArgs.size) =>
             MorphType.Tuple((), typeArgs)
+          case ("List" :: "scala" :: Nil, Some(typeArgs)) if typeArgs.size == 1 =>
+            StandardTypes.listReference(typeArgs)
+          case ("List" :: "package" :: "scala" :: Nil, Some(typeArgs)) if typeArgs.size == 1 =>
+            StandardTypes.listReference(typeArgs)
+          case ("List" :: "immutable" :: "collection" :: "scala" :: Nil, Some(typeArgs)) if typeArgs.size == 1 =>
+            StandardTypes.listReference(typeArgs)
           case ("Option" :: "scala" :: Nil, Some(typeArgs)) if typeArgs.size == 1 =>
             StandardTypes.maybeReference(typeArgs)
           case ("Some" :: "scala" :: Nil, Some(typeArgs)) if typeArgs.size == 1 =>

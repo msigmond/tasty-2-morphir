@@ -39,6 +39,20 @@ object ApplyMorph extends TreeResolver {
             elements
           )
 
+      case Trees.Apply(fun: Trees.TypeApply[?], args) if isEmptyListApply(fun, args) =>
+        for {
+          returnType <- resolveType(apl, inferredGenericTypeArgs).orElse {
+            inferredGenericTypeArgs match {
+              case Some(typeArgs) if typeArgs.size == 1 => Try(StandardTypes.listReference(typeArgs))
+              case _ => Failure(Exception("Could not resolve empty list type for List()"))
+            }
+          }
+        } yield
+          Value.Value.List(
+            returnType,
+            List.empty
+          )
+
       case Trees.Apply(fun: Trees.TypeApply[?], args) =>
         for {
           returnType <- resolveType(apl, inferredGenericTypeArgs)
@@ -156,6 +170,34 @@ object ApplyMorph extends TreeResolver {
           fullyApplied
     }
   }
+
+  private def isEmptyListApply(fun: Trees.TypeApply[?], args: List[Trees.Tree[?]])(using Quotes)(using Contexts.Context): Boolean =
+    hasNoElements(args) && (fun match {
+      case Trees.TypeApply(Trees.Select(id: Trees.Ident[?], methodName), _) if methodName.show == "apply" =>
+        resolveNamespace(id.symbol) match {
+          case "List" :: "scala" :: Nil => true
+          case "List" :: "package" :: "scala" :: Nil => true
+          case "List" :: "immutable" :: "collection" :: "scala" :: Nil => true
+          case _ => false
+        }
+      case _ =>
+        false
+    })
+
+  private def hasNoElements(args: List[Trees.Tree[?]]): Boolean =
+    args match {
+      case Nil => true
+      case oneArg :: Nil => isEmptyRepeatedArg(oneArg)
+      case _ => false
+    }
+
+  private def isEmptyRepeatedArg(arg: Trees.Tree[?]): Boolean =
+    arg match {
+      case Trees.SeqLiteral(elements, _) => elements.isEmpty
+      case Trees.Typed(expr, _) => isEmptyRepeatedArg(expr)
+      case Trees.Inlined(_, bindings, expansion) if bindings.isEmpty => isEmptyRepeatedArg(expansion)
+      case _ => false
+    }
 
   private def isTupleApply(fun: Trees.TypeApply[?], arity: Int)(using Quotes)(using Contexts.Context): Boolean =
     fun match {

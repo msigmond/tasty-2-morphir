@@ -61,6 +61,7 @@ Arguments:
 - `String`
 - `BigDecimal`
 - `Option[T]`
+- `List[T]` for the current narrow empty-list and pass-through slice
 - narrow singleton Scala `enum` custom types
 - Scala tuples, currently the direct `(A, B)` value/type slice
 - Scala `case class` data fields, including generic multi-parameter and nested record references
@@ -78,6 +79,7 @@ Arguments:
 - tuple literals and tuple-typed pass-through values
 - local `val` bindings and block expressions
 - case-class field access, including nested record access
+- empty list values via `List()` and `Nil`
 
 ### Mapping notes
 
@@ -86,6 +88,7 @@ Arguments:
 - Scala `BigDecimal /` maps to `morphir.SDK.decimal.div.unsafe`
 - Scala `Long` currently maps to Morphir `int`
 - Scala `Double` maps to Morphir `float`
+- Scala `List[T]` maps to Morphir `morphir.SDK.list.list[T]`
 - Scala `TupleN` maps to Morphir tuple types and tuple values
 - Scala case classes are emitted as Morphir `type alias` records
 - narrow singleton Scala `enum` families are emitted as Morphir custom types
@@ -114,16 +117,16 @@ This is the current ordered plan for the next **5** supportable `tastyToMorphirI
 
 Keep this section updated as the roadmap changes.
 
-1. **Broad collections support**  
-   Add a narrow first slice of collection support, starting with list-oriented operations whose Elm and Morphir shapes are already well understood.
-2. **Case-class methods**  
+1. **Case-class methods**  
    Add a narrow slice of methods defined on case classes when they can be lowered cleanly without breaking the current data-alias model.
-3. **Tuple destructuring**  
+2. **Tuple destructuring**  
    Extend tuple support from direct tuple values and types into tuple destructuring and tuple-pattern coverage where Elm-baseline parity is stable.
-4. **Richer user-defined ADTs**  
+3. **Richer user-defined ADTs**  
    Extend the current singleton-`enum` slice toward constructor arguments and broader sealed families once exact Elm parity is established for those shapes.
-5. **Further literal widening**  
+4. **Further literal widening**  
    Continue beyond the new `Long` slice only where the Morphir target type is explicit, such as `Char` or other scalar literals with stable Elm parity.
+5. **Richer collections support**  
+   Extend the new empty-list slice toward populated list values and a narrow first set of list-oriented operations once exact Elm parity is established.
 
 ## Test suite
 
@@ -183,8 +186,9 @@ The tests compare full generated JSON distributions directly, so Scala and Elm n
 - generic case classes are supported for the current narrow slice, including multi-parameter data-only records and nested record references
 - user-defined ADTs are currently limited to singleton Scala `enum` cases with direct constructor references and direct constructor matches
 - additional literal widening currently covers `Long`; literals like `Char` are still unsupported
+- collection support is currently limited to `List[T]` types plus empty-list values (`List()` and `Nil`)
 - methods on case classes are not part of case-class data conversion
-- many Scala constructs are still unsupported, including tuple destructuring, broader ADTs with constructor arguments, and collection support
+- many Scala constructs are still unsupported, including tuple destructuring, broader ADTs with constructor arguments, populated list values, and collection operations
 
 ## Cleanup
 

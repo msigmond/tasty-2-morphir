@@ -22,6 +22,7 @@ class SupportedFunctionEquivalenceTest extends TastyEquivalenceSuite:
     arithmeticCase("doubleAdd", "DoubleAdd", "double-add"),
     arithmeticCase("longLiteral", "LongLiteral", "long-literal"),
     arithmeticCase("longAdd", "LongAdd", "long-add"),
+    arithmeticCase("listEmpty", "ListEmpty", "list-empty"),
     arithmeticCase("tupleLiteral", "TupleLiteral", "tuple-literal"),
     arithmeticCase("tuplePassThrough", "TuplePassThrough", "tuple-pass-through"),
     arithmeticCase("clamp", "Clamp", "clamp"),

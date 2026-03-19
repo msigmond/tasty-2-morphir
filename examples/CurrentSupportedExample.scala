@@ -32,3 +32,8 @@ object CurrentSupportedExample:
       else input.box.right
 
     (finalScore, finalTier)
+
+  def normalizedHistory(input: Option[List[Long]]): List[Long] =
+    input match
+      case Some(values) => values
+      case None => Nil
