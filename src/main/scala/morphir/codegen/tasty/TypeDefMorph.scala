@@ -71,39 +71,36 @@ object TypeDefMorph extends TreeResolver {
 
   private def toEnumModule(name: String, preBody: List[?])(using Quotes)(using Contexts.Context): Try[(Module.ModuleName, AccessControlled.AccessControlled[Module.Definition[Unit, MorphType.Type[Unit]]])] = {
     val typeName = Name.fromString(name)
-    val constructors =
-      enumConstructorNames(preBody)
-        .sortBy(_.mkString("."))
-        .foldLeft(Dict.empty[Name.Name, MorphType.ConstructorArgs[Unit]]) { case (acc, ctorName) =>
-          acc.updated(ctorName, List.empty)
-        }
-
-    val typeDef: AccessControlled.AccessControlled[Documented.Documented[morphir.ir.Type.Definition[Unit]]] =
-      AccessControlled.AccessControlled(
-        access = AccessControlled.Access.Public,
-        value = Documented.Documented(
-          doc = "",
-          value = MorphType.CustomTypeDefinition(
-            List.empty,
-            AccessControlled.AccessControlled(
-              access = AccessControlled.Access.Public,
-              value = constructors
+    for {
+      constructors <- enumConstructorDefinitions(preBody)
+    } yield {
+      val typeDef: AccessControlled.AccessControlled[Documented.Documented[morphir.ir.Type.Definition[Unit]]] =
+        AccessControlled.AccessControlled(
+          access = AccessControlled.Access.Public,
+          value = Documented.Documented(
+            doc = "",
+            value = MorphType.CustomTypeDefinition(
+              List.empty,
+              AccessControlled.AccessControlled(
+                access = AccessControlled.Access.Public,
+                value = constructors
+              )
             )
           )
         )
+
+      val moduleName = Path.fromList(List(typeName))
+      val moduleDef = AccessControlled.AccessControlled(
+        access = AccessControlled.Access.Public,
+        value = Module.Definition(
+          types = Dict.empty.updated(typeName, typeDef),
+          values = Dict.empty[Name.Name, AccessControlled.AccessControlled[Documented.Documented[Value.Definition[Unit, MorphType.Type[Unit]]]]],
+          doc = None
+        )
       )
 
-    val moduleName = Path.fromList(List(typeName))
-    val moduleDef = AccessControlled.AccessControlled(
-      access = AccessControlled.Access.Public,
-      value = Module.Definition(
-        types = Dict.empty.updated(typeName, typeDef),
-        values = Dict.empty[Name.Name, AccessControlled.AccessControlled[Documented.Documented[Value.Definition[Unit, MorphType.Type[Unit]]]]],
-        doc = None
-      )
-    )
-
-    Success(moduleName, moduleDef)
+      (moduleName, moduleDef)
+    }
   }
 
   private def getTypeAlias(td: Trees.TypeDef[?], preBody: List[?])(using Quotes)(using Contexts.Context): Try[AccessControlled.AccessControlled[Documented.Documented[morphir.ir.Type.Definition[Unit]]]] = {
@@ -140,10 +137,59 @@ object TypeDefMorph extends TreeResolver {
     td.symbol.typeParams.map(symbol => Name.fromString(symbol.name.show))
 
   private def enumConstructorNames(preBody: List[?])(using Quotes)(using Contexts.Context): List[Name.Name] =
-    preBody.collect {
+    (preBody.collect {
       case vd: Trees.ValDef[?]
           if vd.symbol.flags.is(Flags.Case) && !vd.name.show.startsWith("$") =>
         Name.fromString(vd.name.show)
+      case td: Trees.TypeDef[?]
+          if td.symbol.flags.is(Flags.Case) && !td.symbol.flags.is(Flags.Module) && !td.name.show.startsWith("$") =>
+        Name.fromString(td.name.show)
+    }).distinct
+
+  private def enumConstructorDefinitions(
+    preBody: List[?]
+  )(using Quotes)(using Contexts.Context): Try[Dict.Dict[Name.Name, MorphType.ConstructorArgs[Unit]]] =
+    enumConstructorNames(preBody)
+      .map { ctorName =>
+        enumConstructorTypeDef(preBody, ctorName)
+          .map(enumConstructorArgs)
+          .getOrElse(Try(List.empty))
+          .map(args => (ctorName, args))
+      }
+      .toTryList
+      .map(
+        _.sortBy { case (ctorName, _) => ctorName.mkString(".") }
+          .foldLeft(Dict.empty[Name.Name, MorphType.ConstructorArgs[Unit]]) {
+            case (acc, (ctorName, args)) => acc.updated(ctorName, args)
+          }
+      )
+
+  private def enumConstructorTypeDef(
+    preBody: List[?],
+    ctorName: Name.Name
+  )(using Quotes)(using Contexts.Context): Option[Trees.TypeDef[?]] =
+    preBody.collectFirst {
+      case td: Trees.TypeDef[?]
+          if td.symbol.flags.is(Flags.Case) && !td.symbol.flags.is(Flags.Module) && Name.fromString(td.name.show) == ctorName =>
+        td
+    }
+
+  private def enumConstructorArgs(
+    constructorDef: Trees.TypeDef[?]
+  )(using Quotes)(using Contexts.Context): Try[MorphType.ConstructorArgs[Unit]] =
+    constructorDef match {
+      case Trees.TypeDef(_, Trees.Template(_, _, _, body: List[?])) =>
+        body.collect {
+          case vd: Trees.ValDef[?] if vd.symbol.flags.is(Flags.CaseAccessor) =>
+            vd.tpt.tpe.toType(inferredGenericTypeArgs = None)
+        }.toTryList.map(
+          _.zipWithIndex.map { case (argType, index) =>
+            (Name.fromList(List("arg", (index + 1).toString)), argType)
+          }
+        )
+
+      case x =>
+        Failure(Exception(s"Enum constructor args could not be resolved from: ${x.getClass}"))
     }
 
   private def collectTypeVariables(tpe: MorphType.Type[Unit]): List[Name.Name] =

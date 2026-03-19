@@ -1,7 +1,7 @@
 package morphir.codegen.tasty
 
 import dotty.tools.dotc.ast.Trees.*
-import dotty.tools.dotc.core.{Contexts, Flags}
+import dotty.tools.dotc.core.{Contexts, Flags, Symbols}
 import morphir.codegen.tasty.MorphUtils.*
 import morphir.ir.{FQName, Name, Value, Type as MorphType}
 import morphir.sdk.List as MorphList
@@ -74,15 +74,7 @@ object MatchMorph extends TreeResolver {
             toTuplePattern(patterns, expectedType, elementTypes)
 
           case _ =>
-            for {
-              constructorFQName <- toOptionConstructorFQName(fun)
-              constructorArgs <- toConstructorArgs(patterns, expectedType, constructorFQName)
-            } yield
-              Value.Pattern.ConstructorPattern(
-                expectedType,
-                constructorFQName,
-                constructorArgs
-              )
+            toConstructorPattern(fun, patterns, expectedType)
         }
 
       case Ident(name) if name.show == "None" =>
@@ -124,7 +116,8 @@ object MatchMorph extends TreeResolver {
   private def toConstructorArgs(
     patterns: List[Tree[?]],
     expectedType: MorphType.Type[Unit],
-    constructorFQName: FQName.FQName
+    constructorFQName: FQName.FQName,
+    constructorArgTypes: Option[List[MorphType.Type[Unit]]] = None
   )(using Quotes)(using Contexts.Context): Try[List[Value.Pattern[MorphType.Type[Unit]]]] =
     constructorFQName match {
       case (_, _, localName) if localName == Name.fromString("just") =>
@@ -140,8 +133,17 @@ object MatchMorph extends TreeResolver {
       case (_, _, localName) if localName == Name.fromString("nothing") && patterns.isEmpty =>
         Success(List.empty)
 
-      case (_, _, localName) =>
-        Failure(NotImplementedError(s"Constructor pattern is not supported: $localName"))
+      case (_, _, _) =>
+        constructorArgTypes match {
+          case Some(argTypes) if argTypes.size == patterns.size =>
+            patterns.zip(argTypes).map { case (pattern, argType) =>
+              toPattern(pattern, argType)
+            }.toTryList
+          case Some(argTypes) =>
+            Failure(NotImplementedError(s"Constructor pattern arity mismatch: expected ${argTypes.size}, got ${patterns.size}"))
+          case None =>
+            Failure(NotImplementedError(s"Constructor pattern is not supported: $constructorFQName"))
+        }
     }
 
   private def toOptionConstructorFQName(fun: Tree[?])(using Quotes)(using Contexts.Context): Try[FQName.FQName] =
@@ -170,6 +172,52 @@ object MatchMorph extends TreeResolver {
       case _ => None
     }
 
+  private def toConstructorPattern(
+    fun: Tree[?],
+    patterns: List[Tree[?]],
+    expectedType: MorphType.Type[Unit]
+  )(using Quotes)(using Contexts.Context): Try[Value.Pattern.ConstructorPattern[MorphType.Type[Unit]]] =
+    for {
+      (constructorFQName, constructorArgTypes) <- constructorPatternInfo(fun)
+      constructorArgs <- toConstructorArgs(patterns, expectedType, constructorFQName, constructorArgTypes)
+    } yield
+      Value.Pattern.ConstructorPattern(
+        expectedType,
+        constructorFQName,
+        constructorArgs
+      )
+
+  private def constructorPatternInfo(
+    fun: Tree[?]
+  )(using Quotes)(using Contexts.Context): Try[(FQName.FQName, Option[List[MorphType.Type[Unit]]])] =
+    unwrapTypeApply(fun) match {
+      case Select(qualifier, name) if qualifier.symbol.name.show == "Some" && name.show == "unapply" =>
+        Success((maybeConstructor("just"), None))
+
+      case Select(qualifier, name) if qualifier.symbol.name.show == "None" && name.show == "unapply" =>
+        Success((maybeConstructor("nothing"), Some(List.empty)))
+
+      case Select(qualifier: Select[?], name) if name.show == "unapply" && isEnumConstructor(qualifier) =>
+        for {
+          constructorFQName <- toConstructorFQName(qualifier.symbol)
+          constructorArgTypes <- enumConstructorArgTypes(qualifier.symbol)
+        } yield
+          (constructorFQName, Some(constructorArgTypes))
+
+      case Select(_, name) if name.show == "unapplySeq" =>
+        Failure(NotImplementedError("Sequence extractor patterns are not supported"))
+
+      case x =>
+        Failure(NotImplementedError(s"Pattern extractor is not supported: ${x.getClass}"))
+    }
+
+  private def enumConstructorArgTypes(
+    constructorSymbol: Symbols.Symbol
+  )(using Quotes)(using Contexts.Context): Try[List[MorphType.Type[Unit]]] =
+    constructorSymbol.companionClass.caseAccessors.map { accessor =>
+      accessor.denot.info.resultType.toType(inferredGenericTypeArgs = None)
+    }.toTryList
+
   private def unwrapTypeApply(tree: Tree[?]): Tree[?] =
     tree match {
       case TypeApply(fun, _) => unwrapTypeApply(fun)
@@ -180,5 +228,6 @@ object MatchMorph extends TreeResolver {
     FQName.fqn("morphir.SDK")("maybe")(localName)
 
   private def isEnumConstructor(sel: Select[?])(using Quotes)(using Contexts.Context): Boolean =
-    sel.symbol.flags.is(Flags.Case) && !sel.symbol.flags.is(Flags.CaseAccessor)
+    (sel.symbol.flags.is(Flags.Case) && !sel.symbol.flags.is(Flags.CaseAccessor)) ||
+      sel.symbol.companionClass.flags.is(Flags.Case)
 }

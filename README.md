@@ -58,30 +58,32 @@ Arguments:
 - `Long` (currently mapped to Morphir `int`)
 - `Float`
 - `Double` (mapped to Morphir `float`)
+- `Char`
 - `String`
 - `BigDecimal`
 - `Option[T]`
-- `List[T]` for the current narrow empty-list and pass-through slice
-- narrow singleton Scala `enum` custom types
+- `List[T]` for the current narrow empty-list and `List(...)` literal slice
+- narrow Scala `enum` custom types, including single-argument constructor payloads
 - Scala tuples, currently the direct `(A, B)` value/type slice
 - Scala `case class` data fields, including generic multi-parameter and nested record references
 
 ### Supported expressions
 
-- literals, including `Boolean` and `Long`
+- literals, including `Boolean`, `Long`, and `Char`
 - arithmetic operators: `+`, `-`, `*`, `/`
 - boolean operators: `&&`, `||`
 - comparison operators: `<`, `<=`, `>`, `>=`
 - function application
 - `if / else`
 - pattern matching for `Option` constructors and supported scalar literal patterns
-- constructor references and direct constructor pattern matches for the current singleton-`enum` slice
+- constructor references, direct constructor application, and direct constructor pattern matches for the current narrow `enum` slice
 - tuple literals and tuple-typed pass-through values
 - narrow tuple destructuring in `match` expressions for tuple element capture
 - local `val` bindings and block expressions
 - case-class field access, including nested record access
 - narrow parameterless methods defined directly on case classes
 - empty list values via `List()` and `Nil`
+- populated list values via `List(...)`
 
 ### Mapping notes
 
@@ -90,6 +92,7 @@ Arguments:
 - Scala `BigDecimal /` maps to `morphir.SDK.decimal.div.unsafe`
 - Scala `Long` currently maps to Morphir `int`
 - Scala `Double` maps to Morphir `float`
+- Scala `Char` maps to Morphir `char`
 - Scala `List[T]` maps to Morphir `morphir.SDK.list.list[T]`
 - Scala `TupleN` maps to Morphir tuple types and tuple values
 - Scala case classes are emitted as Morphir `type alias` records
@@ -120,16 +123,16 @@ This is the current ordered plan for the next **5** supportable `tastyToMorphirI
 
 Keep this section updated as the roadmap changes.
 
-1. **Richer user-defined ADTs**  
-   Extend the current singleton-`enum` slice toward constructor arguments and broader sealed families once exact Elm parity is established for those shapes.
-2. **Further literal widening**  
-   Continue beyond the new `Long` slice only where the Morphir target type is explicit, such as `Char` or other scalar literals with stable Elm parity.
-3. **Richer collections support**  
-   Extend the new empty-list slice toward populated list values and a narrow first set of list-oriented operations once exact Elm parity is established.
-4. **Broader case-class methods**  
+1. **Broader case-class methods**  
    Build on the new parameterless method slice by adding explicit method parameters or slightly richer method shapes only where full Elm parity remains exact.
-5. **Broader tuple destructuring**  
+2. **Broader tuple destructuring**  
    Build on the new tuple-match slice by adding more tuple arities, local `val` destructuring, or richer tuple-pattern shapes only where exact Elm parity stays stable.
+3. **Broader user-defined ADTs**  
+   Build on the new single-argument enum-constructor slice by adding additional constructor shapes or broader ADT families only where full Elm parity remains exact.
+4. **Broader literal widening**  
+   Build on the new `Char` slice only where the Morphir target type is explicit and exact Elm parity stays stable.
+5. **Broader collections support**  
+   Build on the new `List(...)` literal slice by adding more collection construction shapes or operations only where exact Elm parity remains stable.
 
 ## Test suite
 
@@ -187,12 +190,12 @@ The tests compare full generated JSON distributions directly, so Scala and Elm n
 
 - support is intentionally narrow and fail-fast
 - generic case classes are supported for the current narrow slice, including multi-parameter data-only records and nested record references
-- user-defined ADTs are currently limited to singleton Scala `enum` cases with direct constructor references and direct constructor matches
-- additional literal widening currently covers `Long`; literals like `Char` are still unsupported
-- collection support is currently limited to `List[T]` types plus empty-list values (`List()` and `Nil`)
+- user-defined ADTs are currently limited to Scala `enum` cases with the current direct-constructor and single-argument-constructor slice
+- additional literal widening currently covers `Long` and `Char`; other scalar literal expansions remain unsupported
+- collection support is currently limited to `List[T]` types plus direct `List(...)` literals and empty-list values (`List()` and `Nil`)
 - case-class methods are currently limited to the narrow parameterless slice; explicit method parameters are still unsupported
 - tuple destructuring is currently limited to the narrow tuple-match slice; local `val` destructuring and broader tuple patterns are still unsupported
-- many Scala constructs are still unsupported, including broader ADTs with constructor arguments, populated list values, and collection operations
+- many Scala constructs are still unsupported, including broader ADT families, collection operations, and richer tuple or case-method shapes
 
 ## Cleanup
 

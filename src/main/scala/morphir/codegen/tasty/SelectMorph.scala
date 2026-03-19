@@ -69,5 +69,6 @@ object SelectMorph extends TreeResolver {
   }
 
   private def isEnumConstructor(sel: Select[?])(using Quotes)(using Contexts.Context): Boolean =
-    sel.symbol.flags.is(Flags.Case) && !sel.symbol.flags.is(Flags.CaseAccessor)
+    (sel.symbol.flags.is(Flags.Case) && !sel.symbol.flags.is(Flags.CaseAccessor)) ||
+      sel.symbol.companionClass.flags.is(Flags.Case)
 }

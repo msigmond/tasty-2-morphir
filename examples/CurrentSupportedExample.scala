@@ -3,6 +3,10 @@ package examples
 enum Tier:
   case Plus, Vip
 
+enum Reward:
+  case Bonus(points: Int)
+  case Grade(mark: Char)
+
 case class DualBox[A, B](right: B, left: A)
 
 case class Person(age: Option[Long], bonus: Long):
@@ -44,3 +48,11 @@ object CurrentSupportedExample:
   def projectTier(result: (Long, Tier)): Tier =
     result match
       case (_, tier) => tier
+
+  def rewardCode(reward: Reward): Char =
+    reward match
+      case Reward.Bonus(_) => 'B'
+      case Reward.Grade(mark) => mark
+
+  def defaultThresholds: List[Int] =
+    List(10, 20)

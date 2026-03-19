@@ -1,7 +1,7 @@
 package morphir.codegen.tasty
 
 import dotty.tools.dotc.ast.Trees
-import dotty.tools.dotc.core.{Contexts, Names}
+import dotty.tools.dotc.core.{Contexts, Flags, Names}
 import morphir.codegen.tasty.MorphUtils.*
 import morphir.ir.{Value, Type as MorphType}
 import morphir.sdk.List as MorphList
@@ -14,12 +14,20 @@ object ApplyMorph extends TreeResolver {
   def toValue(apl: Trees.Apply[?], inferredGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]])(using Quotes)(using Contexts.Context): Try[Value.Value[Unit, MorphType.Type[Unit]]] = {
     apl match {
       case Trees.Apply(sel: Trees.Select[?], args) =>
-        for {
-          returnType <- resolveType(apl, inferredGenericTypeArgs)
-          function <- sel.toValue(returnType.extractGenericTypeArgs)
-          applied <- applyArguments(function, args, returnType.extractGenericTypeArgs)
-        } yield
-          applied
+        if isEnumConstructorApply(sel) then
+          for {
+            returnType <- resolveType(apl, inferredGenericTypeArgs)
+            function <- toEnumConstructorValue(sel, args, returnType, inferredGenericTypeArgs)
+            applied <- applyArguments(function, args, returnType.extractGenericTypeArgs)
+          } yield
+            applied
+        else
+          for {
+            returnType <- resolveType(apl, inferredGenericTypeArgs)
+            function <- sel.toValue(returnType.extractGenericTypeArgs)
+            applied <- applyArguments(function, args, returnType.extractGenericTypeArgs)
+          } yield
+            applied
 
       case Trees.Apply(functionId: Trees.Ident[?], args) =>
         for {
@@ -39,18 +47,21 @@ object ApplyMorph extends TreeResolver {
             elements
           )
 
-      case Trees.Apply(fun: Trees.TypeApply[?], args) if isEmptyListApply(fun, args) =>
+      case Trees.Apply(fun: Trees.TypeApply[?], args) if isListApply(fun) && hasListElements(args) =>
         for {
           returnType <- resolveType(apl, inferredGenericTypeArgs).orElse {
             inferredGenericTypeArgs match {
               case Some(typeArgs) if typeArgs.size == 1 => Try(StandardTypes.listReference(typeArgs))
-              case _ => Failure(Exception("Could not resolve empty list type for List()"))
+              case _ => Failure(Exception("Could not resolve list type for List()"))
             }
           }
+          elements <- extractListElements(args)
+            .map(_.map(expandSubTree(_, returnType.extractGenericTypeArgs.orElse(inferredGenericTypeArgs))).toTryList)
+            .getOrElse(Failure(Exception("Could not extract list elements from List()")))
         } yield
           Value.Value.List(
             returnType,
-            List.empty
+            elements
           )
 
       case Trees.Apply(fun: Trees.TypeApply[?], args) =>
@@ -171,8 +182,8 @@ object ApplyMorph extends TreeResolver {
     }
   }
 
-  private def isEmptyListApply(fun: Trees.TypeApply[?], args: List[Trees.Tree[?]])(using Quotes)(using Contexts.Context): Boolean =
-    hasNoElements(args) && (fun match {
+  private def isListApply(fun: Trees.TypeApply[?])(using Quotes)(using Contexts.Context): Boolean =
+    fun match {
       case Trees.TypeApply(Trees.Select(id: Trees.Ident[?], methodName), _) if methodName.show == "apply" =>
         resolveNamespace(id.symbol) match {
           case "List" :: "scala" :: Nil => true
@@ -182,21 +193,24 @@ object ApplyMorph extends TreeResolver {
         }
       case _ =>
         false
-    })
-
-  private def hasNoElements(args: List[Trees.Tree[?]]): Boolean =
-    args match {
-      case Nil => true
-      case oneArg :: Nil => isEmptyRepeatedArg(oneArg)
-      case _ => false
     }
 
-  private def isEmptyRepeatedArg(arg: Trees.Tree[?]): Boolean =
+  private def hasListElements(args: List[Trees.Tree[?]]): Boolean =
+    extractListElements(args).nonEmpty
+
+  private def extractListElements(args: List[Trees.Tree[?]]): Option[List[Trees.Tree[?]]] =
+    args match {
+      case Nil => Some(List.empty)
+      case oneArg :: Nil => extractRepeatedArgElements(oneArg)
+      case _ => None
+    }
+
+  private def extractRepeatedArgElements(arg: Trees.Tree[?]): Option[List[Trees.Tree[?]]] =
     arg match {
-      case Trees.SeqLiteral(elements, _) => elements.isEmpty
-      case Trees.Typed(expr, _) => isEmptyRepeatedArg(expr)
-      case Trees.Inlined(_, bindings, expansion) if bindings.isEmpty => isEmptyRepeatedArg(expansion)
-      case _ => false
+      case Trees.SeqLiteral(elements, _) => Some(elements)
+      case Trees.Typed(expr, _) => extractRepeatedArgElements(expr)
+      case Trees.Inlined(_, bindings, expansion) if bindings.isEmpty => extractRepeatedArgElements(expansion)
+      case _ => None
     }
 
   private def isTupleApply(fun: Trees.TypeApply[?], arity: Int)(using Quotes)(using Contexts.Context): Boolean =
@@ -210,5 +224,41 @@ object ApplyMorph extends TreeResolver {
         }
       case _ =>
         false
+    }
+
+  private def isEnumConstructorApply(sel: Trees.Select[?])(using Quotes)(using Contexts.Context): Boolean =
+    sel match {
+      case Trees.Select(qualifier: Trees.Select[?], methodName) if methodName.show == "apply" =>
+        isEnumConstructorReference(qualifier)
+      case _ =>
+        false
+    }
+
+  private def isEnumConstructorReference(sel: Trees.Select[?])(using Quotes)(using Contexts.Context): Boolean =
+    (sel.symbol.flags.is(Flags.Case) && !sel.symbol.flags.is(Flags.CaseAccessor)) ||
+      sel.symbol.companionClass.flags.is(Flags.Case)
+
+  private def toEnumConstructorValue(
+    sel: Trees.Select[?],
+    args: List[Trees.Tree[?]],
+    returnType: MorphType.Type[Unit],
+    inferredGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]]
+  )(using Quotes)(using Contexts.Context): Try[Value.Value.Constructor[Unit, MorphType.Type[Unit]]] =
+    sel match {
+      case Trees.Select(qualifier: Trees.Select[?], _) =>
+        for {
+          argTypes <- args.map(expandSubTree(_, inferredGenericTypeArgs).flatMap(_.extractType)).toTryList
+          constructor <- toConstructorFQName(qualifier.symbol)
+          enumReturnType <- qualifier.symbol.owner.typeRef.toType(inferredGenericTypeArgs = None).orElse(Try(returnType))
+        } yield
+          Value.Value.Constructor(
+            argTypes.foldRight(enumReturnType) { (argType, accType) =>
+              MorphType.Function((), argType, accType)
+            },
+            constructor
+          )
+
+      case x =>
+        Failure(Exception(s"Enum constructor application could not be resolved from: ${x.getClass}"))
     }
 }

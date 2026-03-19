@@ -26,6 +26,9 @@ object LiteralMorph {
       case Literal(Constant(value: Double)) =>
         Success((StandardTypes.floatReference, MorphLiteral.floatLiteral(value)))
 
+      case Literal(Constant(value: Char)) =>
+        Success((StandardTypes.charReference, MorphLiteral.charLiteral(morphir.sdk.Char.from(value))))
+
       case Literal(Constant(value: String)) =>
         Success((StandardTypes.stringReference, MorphLiteral.stringLiteral(value)))
 

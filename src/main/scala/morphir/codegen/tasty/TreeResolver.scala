@@ -17,7 +17,7 @@ trait TreeResolver {
 
   private def resolveTypeOpt(typeOpt: Types.Type, inferredGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]])(using Quotes)(using Contexts.Context): Try[MorphType.Type[Unit]] = {
     Try(typeOpt)
-      .filter(_.typeSymbol.isType)
+      .filter(tpe => tpe.typeSymbol.isType && !tpe.isInstanceOf[Types.MethodType])
       .flatMap(_.toType(inferredGenericTypeArgs))
       .orElse {
         typeOpt match {
@@ -80,6 +80,8 @@ trait TreeResolver {
             StandardTypes.floatReference
           case ("Double" :: "scala" :: Nil, _) =>
             StandardTypes.floatReference
+          case ("Char" :: "scala" :: Nil, _) =>
+            StandardTypes.charReference
           case ("String" :: "Predef" :: "scala" :: Nil, _) =>
             StandardTypes.stringReference
           case ("String" :: "lang" :: "java" :: Nil, _) =>

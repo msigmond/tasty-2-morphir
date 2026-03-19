@@ -26,6 +26,11 @@ object StandardTypes {
     MorphType.Reference((), fQName, MorphList.empty[MorphType.Type[Unit]])
   }
 
+  val charReference: Type.Reference[Unit] = {
+    val fQName = FQName.fqn("morphir.SDK")("char")("char")
+    MorphType.Reference((), fQName, MorphList.empty[MorphType.Type[Unit]])
+  }
+
   val decimalReference: Type.Reference[Unit] = {
     val fQName = FQName.fqn("morphir.SDK")("decimal")("decimal")
     MorphType.Reference((), fQName, MorphList.empty[MorphType.Type[Unit]])

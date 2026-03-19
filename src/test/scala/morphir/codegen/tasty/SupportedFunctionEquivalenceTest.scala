@@ -19,10 +19,12 @@ class SupportedFunctionEquivalenceTest extends TastyEquivalenceSuite:
     arithmeticCase("booleanAnd", "BooleanAnd", "boolean-and"),
     arithmeticCase("booleanOr", "BooleanOr", "boolean-or"),
     arithmeticCase("doubleLiteral", "DoubleLiteral", "double-literal"),
+    arithmeticCase("charLiteral", "CharLiteral", "char-literal"),
     arithmeticCase("doubleAdd", "DoubleAdd", "double-add"),
     arithmeticCase("longLiteral", "LongLiteral", "long-literal"),
     arithmeticCase("longAdd", "LongAdd", "long-add"),
     arithmeticCase("listEmpty", "ListEmpty", "list-empty"),
+    arithmeticCase("listLiteral", "ListLiteral", "list-literal"),
     arithmeticCase("tupleLiteral", "TupleLiteral", "tuple-literal"),
     arithmeticCase("tuplePassThrough", "TuplePassThrough", "tuple-pass-through"),
     arithmeticCase("extractFirst", "ExtractFirst", "extract-first"),
@@ -50,7 +52,8 @@ class SupportedFunctionEquivalenceTest extends TastyEquivalenceSuite:
     arithmeticCase("maybeMatchDefault", "MaybeMatchDefault", "maybe-match-default"),
     arithmeticCase("maybeMatchIncrement", "MaybeMatchIncrement", "maybe-match-increment"),
     arithmeticCase("maybeMatchMap", "MaybeMatchMap", "maybe-match-map"),
-    arithmeticMultiFileCase("simpleColorAdt", List("Color", "MatchRed", "WrapRed"), "simple-color-adt")
+    arithmeticMultiFileCase("simpleColorAdt", List("Color", "MatchRed", "WrapRed"), "simple-color-adt"),
+    arithmeticMultiFileCase("colorWithValueAdt", List("ColorWithValue", "GetIntensity", "RedFortyTwo"), "color-with-value-adt")
   )
 
   registerEquivalenceCases(equivalenceCases)(
