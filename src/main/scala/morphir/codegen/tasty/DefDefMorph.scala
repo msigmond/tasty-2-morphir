@@ -107,8 +107,8 @@ object DefDefMorph extends TreeResolver {
       }
 
     listOfTries.toTryList.flatMap { params =>
-      if isCaseMethod && params.size > 1 then
-        Failure(NotImplementedError("Case-class methods with more than one explicit parameter are not supported"))
+      if isCaseMethod && params.size > 2 then
+        Failure(NotImplementedError("Case-class methods with more than two explicit parameters are not supported"))
       else {
         val maybeSelfParam =
           ownerType.filter(_ => isCaseMethod).map(owner => (selfParamName, owner, owner))

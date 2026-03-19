@@ -25,6 +25,11 @@ case class Person(age: Option[Long], bonus: Long):
     if bonus + 1L > threshold then bonus + 1L
     else threshold
 
+  def boundedBonus(lowerBound: Long, upperBound: Long): Long =
+    if bonus < lowerBound then lowerBound
+    else if bonus > upperBound then upperBound
+    else bonus
+
 case class Envelope[A, B](box: DualBox[A, B], fee: Long)
 
 object CurrentSupportedExample:
@@ -84,7 +89,7 @@ object CurrentSupportedExample:
     values.length
 
   def keepsReward(person: Person, reward: Reward): Reward =
-    if person.adjustedBonus(10L) > 10L then reward
+    if person.boundedBonus(10L, 20L) > 10L then reward
     else Reward.Bonus(0)
 
   def sumPair(pair: (Int, Int)): Int =
