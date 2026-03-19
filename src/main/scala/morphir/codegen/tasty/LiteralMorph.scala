@@ -17,6 +17,9 @@ object LiteralMorph {
       case Literal(Constant(value: Int)) =>
         Success((StandardTypes.intReference, MorphLiteral.intLiteral(value)))
 
+      case Literal(Constant(value: Long)) =>
+        Success((StandardTypes.intReference, MorphLiteral.intLiteral(morphir.sdk.Int.fromInt64(value))))
+
       case Literal(Constant(value: Float)) =>
         Success((StandardTypes.floatReference, MorphLiteral.floatLiteral(value)))
 

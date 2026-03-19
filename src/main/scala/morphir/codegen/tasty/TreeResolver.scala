@@ -71,6 +71,8 @@ trait TreeResolver {
             StandardTypes.boolReference
           case ("Int" :: "scala" :: Nil, _) =>
             StandardTypes.intReference
+          case ("Long" :: "scala" :: Nil, _) =>
+            StandardTypes.intReference
           case ("Float" :: "scala" :: Nil, _) =>
             StandardTypes.floatReference
           case ("Double" :: "scala" :: Nil, _) =>
