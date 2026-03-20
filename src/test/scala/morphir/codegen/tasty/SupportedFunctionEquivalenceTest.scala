@@ -38,6 +38,8 @@ class SupportedFunctionEquivalenceTest extends TastyEquivalenceSuite:
     arithmeticCase("seqMapIncrement", "SeqMapIncrement", "seq-map-increment"),
     arithmeticCase("seqFlatMapExpand", "SeqFlatMapExpand", "seq-flatmap-expand"),
     arithmeticCase("seqFoldSum", "SeqFoldSum", "seq-fold-sum"),
+    arithmeticCase("mapLiteral", "MapLiteral", "map-literal"),
+    arithmeticCase("mapPassThrough", "MapPassThrough", "map-pass-through"),
     arithmeticCase("tupleLiteral", "TupleLiteral", "tuple-literal"),
     arithmeticCase("tuplePassThrough", "TuplePassThrough", "tuple-pass-through"),
     arithmeticCase("extractFirst", "ExtractFirst", "extract-first"),

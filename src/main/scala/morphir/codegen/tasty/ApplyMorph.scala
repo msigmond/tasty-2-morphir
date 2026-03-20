@@ -7,7 +7,7 @@ import morphir.ir.{Value, Type as MorphType}
 import morphir.sdk.List as MorphList
 
 import scala.quoted.Quotes
-import scala.util.{Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 object ApplyMorph extends TreeResolver {
 
@@ -67,6 +67,9 @@ object ApplyMorph extends TreeResolver {
             returnType,
             elements
           )
+
+      case Trees.Apply(fun: Trees.TypeApply[?], args) if isMapLiteralApply(apl, fun, inferredGenericTypeArgs) && hasListElements(args) =>
+        toMapLiteralValue(apl, args, inferredGenericTypeArgs)
 
       case Trees.Apply(fun: Trees.TypeApply[?], args) if isListHigherOrderMethodApply(fun, "map") =>
         toListHigherOrderMethodValue(apl, fun, args, inferredGenericTypeArgs)
@@ -300,6 +303,88 @@ object ApplyMorph extends TreeResolver {
         Failure(Exception(s"collect expects a single-case lambda match, got: ${other.getClass}"))
     }
 
+  private def toMapLiteralValue(
+    apl: Trees.Apply[?],
+    args: List[Trees.Tree[?]],
+    inferredGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]]
+  )(using Quotes)(using Contexts.Context): Try[Value.Value[Unit, MorphType.Type[Unit]]] =
+    for {
+      returnType <- resolveType(apl, inferredGenericTypeArgs).orElse {
+        inferredGenericTypeArgs match {
+          case Some(typeArgs) if typeArgs.size == 2 => Try(StandardTypes.dictReference(typeArgs))
+          case _ => Failure(Exception("Could not resolve map type for Map()"))
+        }
+      }
+      entryValues <- extractListElements(args)
+        .map(_.map(toMapEntryValue).toTryList)
+        .getOrElse(Failure(Exception("Could not extract map entries from Map()")))
+      keyValueTypes <- returnType.extractGenericTypeArgs match {
+        case Some(keyType :: valueType :: Nil) => Success(List(keyType, valueType))
+        case _ => Failure(Exception("Map type must have key and value generic arguments"))
+      }
+      entryTupleType = MorphType.Tuple((), keyValueTypes)
+      entryListType = StandardTypes.listReference(List(entryTupleType))
+      fromListType = MorphType.Function((), entryListType, returnType)
+      fromList: Value.Value[Unit, MorphType.Type[Unit]] = Value.Value.Reference(
+        fromListType,
+        morphir.ir.FQName.fqn("morphir.SDK")("dict")("fromList")
+      )
+      entryList = Value.Value.List(
+        entryListType,
+        entryValues
+      )
+    } yield
+      Value.Value.Apply(
+        returnType,
+        fromList,
+        entryList
+      )
+
+  private def toMapEntryValue(
+    entry: Trees.Tree[?]
+  )(using Quotes)(using Contexts.Context): Try[Value.Value[Unit, MorphType.Type[Unit]]] =
+    entry match {
+      case Trees.Apply(Trees.TypeApply(Trees.Select(arrowAssoc, methodName), _), value :: Nil) if methodName.show == "->" =>
+        tupleFromArrowAssoc(arrowAssoc, value)
+      case Trees.Apply(Trees.Select(arrowAssoc, methodName), value :: Nil) if methodName.show == "->" =>
+        tupleFromArrowAssoc(arrowAssoc, value)
+      case other =>
+        expandSubTree(other, inferredGenericTypeArgs = None).flatMap {
+          case tuple @ Value.Value.Tuple(_, elements) if elements.size == 2 => Success(tuple)
+          case value => Failure(Exception(s"Map entry did not lower to a key/value pair: ${value.getClass}"))
+        }
+    }
+
+  private def tupleFromArrowAssoc(
+    arrowAssoc: Trees.Tree[?],
+    valueTree: Trees.Tree[?]
+  )(using Quotes)(using Contexts.Context): Try[Value.Value[Unit, MorphType.Type[Unit]]] =
+    for {
+      keyTree <- arrowAssocKey(arrowAssoc)
+      keyValue <- expandSubTree(keyTree, inferredGenericTypeArgs = None)
+      valueValue <- expandSubTree(valueTree, inferredGenericTypeArgs = None)
+      keyType <- keyValue.extractType
+      valueType <- valueValue.extractType
+    } yield
+      Value.Value.Tuple(
+        MorphType.Tuple((), List(keyType, valueType)),
+        List(keyValue, valueValue)
+      )
+
+  private def arrowAssocKey(
+    arrowAssoc: Trees.Tree[?]
+  )(using Quotes)(using Contexts.Context): Try[Trees.Tree[?]] =
+    arrowAssoc match {
+      case Trees.Apply(_, key :: Nil) =>
+        Success(key)
+      case Trees.Typed(expr, _) =>
+        arrowAssocKey(expr)
+      case Trees.Inlined(_, bindings, expansion) if bindings.isEmpty =>
+        arrowAssocKey(expansion)
+      case other =>
+        Failure(Exception(s"Could not extract ArrowAssoc key from ${other.getClass}"))
+    }
+
   private def patternType(
     pattern: Value.Pattern[MorphType.Type[Unit]]
   ): Try[MorphType.Type[Unit]] =
@@ -420,6 +505,37 @@ object ApplyMorph extends TreeResolver {
         }
       case _ =>
         false
+    }
+
+  private def isMapLiteralApply(
+    apl: Trees.Apply[?],
+    fun: Trees.TypeApply[?],
+    inferredGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]]
+  )(using Quotes)(using Contexts.Context): Boolean =
+    isMapApply(fun) || resolveType(apl, inferredGenericTypeArgs).toOption.exists {
+      case MorphType.Reference(_, fQName, _) => fQName == morphir.ir.FQName.fqn("morphir.SDK")("dict")("dict")
+      case _ => false
+    }
+
+  private def isMapApply(fun: Trees.TypeApply[?])(using Quotes)(using Contexts.Context): Boolean =
+    fun match {
+      case Trees.TypeApply(Trees.Select(qualifier, methodName), _) if methodName.show == "apply" =>
+        qualifier match {
+          case id: Trees.Ident[?] => isMapNamespace(resolveNamespace(id.symbol))
+          case sel: Trees.Select[?] => isMapNamespace(resolveNamespace(sel.symbol))
+          case _ => false
+        }
+      case _ =>
+        false
+    }
+
+  private def isMapNamespace(namespace: List[String]): Boolean =
+    namespace match {
+      case "Map" :: "scala" :: Nil => true
+      case "Map" :: "package" :: "scala" :: Nil => true
+      case "Map" :: "collection" :: "scala" :: Nil => true
+      case "Map" :: "immutable" :: "collection" :: "scala" :: Nil => true
+      case _ => false
     }
 
   private def isListHigherOrderMethodApply(fun: Trees.TypeApply[?], methodName: String)(using Quotes)(using Contexts.Context): Boolean =

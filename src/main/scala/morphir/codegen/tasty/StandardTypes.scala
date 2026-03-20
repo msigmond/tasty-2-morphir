@@ -45,4 +45,9 @@ object StandardTypes {
     val fQName = FQName.fqn("morphir.SDK")("list")("list")
     MorphType.Reference((), fQName, types)
   }
+
+  def dictReference(types: MorphList.List[MorphType.Type[Unit]]): Type.Reference[Unit] = {
+    val fQName = FQName.fqn("morphir.SDK")("dict")("dict")
+    MorphType.Reference((), fQName, types)
+  }
 }
