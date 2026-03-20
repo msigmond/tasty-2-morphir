@@ -62,7 +62,7 @@ Arguments:
 - `String`
 - `BigDecimal`
 - `Option[T]`
-- `List[T]` for the current narrow empty-list, direct `List(...)` literal, nested-list literal, direct `length`, direct single-lambda `map` / `filter` / `flatMap`, and narrow `foldLeft` slices
+- `List[T]` for the current narrow empty-list, direct `List(...)` literal, nested-list literal, direct `length`, direct single-lambda `map` / `filter` / `flatMap`, narrow `foldLeft`, and narrow `collect` slices
 - narrow Scala `enum` custom types, including direct constructor payloads up to the current two-argument slice
 - Scala tuples, currently the direct `(A, B)` value/type slice
 - Scala `case class` data fields, including generic multi-parameter and nested record references
@@ -91,6 +91,7 @@ Arguments:
 - direct `List.filter` with a single-argument lambda whose predicate stays within the supported expression surface
 - direct `List.flatMap` with a single-argument lambda whose body returns another supported `List`
 - narrow `List.foldLeft` with a two-parameter lambda whose body stays within the supported expression surface
+- narrow `List.collect` with a single-case lambda `match` body that can be normalized to a `Maybe`-returning transform
 - pattern-aware list transforms via explicit `match` expressions inside supported list lambdas, starting with tuple matches
 
 ### Mapping notes
@@ -107,6 +108,7 @@ Arguments:
 - Scala `List.filter` maps to Morphir `morphir.SDK.list.filter`
 - Scala `List.flatMap` maps to Morphir `morphir.SDK.list.concatMap`
 - Scala `List.foldLeft` maps to Morphir `morphir.SDK.list.foldl`
+- Scala `List.collect` maps to Morphir `morphir.SDK.list.filterMap` for the current single-case partial-function slice
 - Scala `TupleN` maps to Morphir tuple types and tuple values
 - Scala case classes are emitted as Morphir `type alias` records
 - narrow case-class methods are emitted as module values with an explicit record receiver input, including the current two-explicit-parameter slice
@@ -138,26 +140,26 @@ This roadmap is intentionally collection-focused and prioritizes exact-parity, v
 
 Keep this section updated as the roadmap changes.
 
-1. **List `collect`**  
-   Add a narrow `collect` slice by lowering supported partial-function patterns only where exact Elm parity remains stable.
-2. **`Seq[T]` normalization**  
+1. **`Seq[T]` normalization**  
    Normalize the most common immutable `Seq` shapes onto the proven list path, starting with literals plus `map` / `flatMap` / `foldLeft`.
-3. **`Map[K, V]` types and literals**  
+2. **`Map[K, V]` types and literals**  
    Add narrow `Map` type/literal support only for key/value shapes that can be matched exactly against Elm-generated Morphir baselines.
-4. **Core `Map` operations**  
+3. **Core `Map` operations**  
    Add the safest exact-parity `Map` operations next, likely starting with lookup and fold-oriented shapes before broader transforms.
-5. **`foreach` and `for`-style traversal**  
-    Explore constrained support for pure traversal shapes only after the value-returning collection operators above are stable and well baselined.
-6. **Collection predicates**  
-    Add narrow exact-parity support for predicate-style collection queries such as `List.exists` / `List.forall` once the core transform and fold paths are stable.
-7. **Collection concatenation**
-    Add exact-parity support for safe list-concatenation shapes such as `++` / append once the main transform, fold, and predicate slices are stable.
-8. **Collection zipping**
-    Add narrow exact-parity support for tuple-producing shapes such as `zip` once fold and pattern-aware collection support are stable enough to consume the resulting tuples.
-9. **Collection partitioning**
-    Add exact-parity support for narrow partition-style collection splits once predicate and tuple-consuming collection operations are in place.
-10. **Pattern-aware flat-mapped ADTs**
-    Extend the current explicit-match collection support from tuple-based lambdas to narrow ADT-oriented `map` / `flatMap` shapes over already-supported enums.
+4. **`foreach` and `for`-style traversal**  
+     Explore constrained support for pure traversal shapes only after the value-returning collection operators above are stable and well baselined.
+5. **Collection predicates**  
+     Add narrow exact-parity support for predicate-style collection queries such as `List.exists` / `List.forall` once the core transform and fold paths are stable.
+6. **Collection concatenation**
+     Add exact-parity support for safe list-concatenation shapes such as `++` / append once the main transform, fold, and predicate slices are stable.
+7. **Collection zipping**
+     Add narrow exact-parity support for tuple-producing shapes such as `zip` once fold and pattern-aware collection support are stable enough to consume the resulting tuples.
+8. **Collection partitioning**
+     Add exact-parity support for narrow partition-style collection splits once predicate and tuple-consuming collection operations are in place.
+9. **Pattern-aware flat-mapped ADTs**
+     Extend the current explicit-match collection support from tuple-based lambdas to narrow ADT-oriented `map` / `flatMap` shapes over already-supported enums.
+10. **Nested collection folds**
+     Extend the current fold support to safe nested collection shapes once `Seq` normalization and core list predicate/concatenation slices are stable.
 
 ## Test suite
 
@@ -217,7 +219,7 @@ The tests compare full generated JSON distributions directly, so Scala and Elm n
 - generic case classes are supported for the current narrow slice, including multi-parameter data-only records and nested record references
 - user-defined ADTs are currently limited to Scala `enum` cases with the current direct-constructor slice up to three constructor arguments
 - additional literal widening currently covers `Long`, `Char`, direct `String` literals, and `Float` literal patterns; other scalar literal expansions remain unsupported
-- collection support is currently limited to `List[T]` types plus direct `List(...)` literals, nested-list literals, empty-list values (`List()` and `Nil`), direct `List.length`, narrow direct-lambda `List.map` / `List.filter` / `List.flatMap` slices, and a narrow `List.foldLeft` slice
+- collection support is currently limited to `List[T]` types plus direct `List(...)` literals, nested-list literals, empty-list values (`List()` and `Nil`), direct `List.length`, narrow direct-lambda `List.map` / `List.filter` / `List.flatMap` slices, a narrow `List.foldLeft` slice, and a narrow single-case `List.collect` slice
 - case-class methods are currently limited to direct methods on the case class plus at most two explicit parameters, with supported bodies staying within the current expression surface
 - tuple destructuring is currently limited to narrow flat tuple-match and local-`val` slices up to the current 4-tuple coverage; broader tuple patterns are still unsupported
 - many Scala constructs are still unsupported, including broader ADT families, collection operations, and richer tuple or case-method shapes

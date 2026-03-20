@@ -39,6 +39,8 @@ object StandardFunctions {
         Success(toCurriedFunctionReference(FQName.fqn("morphir.SDK")("list")("filter"), returnType, List(functionType, listType)))
       case ("flatMap" :: _, functionType :: listType :: Nil) if isListType(listType) =>
         Success(toCurriedFunctionReference(FQName.fqn("morphir.SDK")("list")("concatMap"), returnType, List(functionType, listType)))
+      case ("collect" :: _, functionType :: listType :: Nil) if isListType(listType) =>
+        Success(toCurriedFunctionReference(FQName.fqn("morphir.SDK")("list")("filterMap"), returnType, List(functionType, listType)))
       case ("foldLeft" :: _, functionType :: initType :: listType :: Nil) if isListType(listType) =>
         Success(toCurriedFunctionReference(FQName.fqn("morphir.SDK")("list")("foldl"), returnType, List(functionType, initType, listType)))
       case x =>

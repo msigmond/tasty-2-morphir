@@ -23,6 +23,8 @@ object ApplyMorph extends TreeResolver {
             applied
         else if isListHigherOrderMethodApply(sel, "map") || isListHigherOrderMethodApply(sel, "filter") || isListHigherOrderMethodApply(sel, "flatMap") then
           toListHigherOrderMethodValue(apl, sel, args, inferredGenericTypeArgs)
+        else if isListHigherOrderMethodApply(sel, "collect") then
+          toListCollectValue(apl, sel, args, inferredGenericTypeArgs)
         else
           for {
             returnType <- resolveType(apl, inferredGenericTypeArgs)
@@ -75,6 +77,9 @@ object ApplyMorph extends TreeResolver {
       case Trees.Apply(fun: Trees.TypeApply[?], args) if isListHigherOrderMethodApply(fun, "flatMap") =>
         toListHigherOrderMethodValue(apl, fun, args, inferredGenericTypeArgs)
 
+      case Trees.Apply(fun: Trees.TypeApply[?], args) if isListHigherOrderMethodApply(fun, "collect") =>
+        toListCollectValue(apl, fun, args, inferredGenericTypeArgs)
+
       case Trees.Apply(fun: Trees.Apply[?], args) if isListFoldLeftApply(fun) =>
         toListFoldLeftValue(apl, fun, args, inferredGenericTypeArgs)
 
@@ -112,6 +117,47 @@ object ApplyMorph extends TreeResolver {
 
       case x =>
         Failure(Exception(s"List higher-order method could not be processed from: ${x.getClass}"))
+    }
+
+  private def toListCollectValue(
+    apl: Trees.Apply[?],
+    fun: Trees.TypeApply[?],
+    args: List[Trees.Tree[?]],
+    inferredGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]]
+  )(using Quotes)(using Contexts.Context): Try[Value.Value[Unit, MorphType.Type[Unit]]] =
+    fun match {
+      case Trees.TypeApply(sel @ Trees.Select(_, _), _) =>
+        toListCollectValue(apl, sel, args, inferredGenericTypeArgs)
+      case x =>
+        Failure(Exception(s"List collect could not be processed from: ${x.getClass}"))
+    }
+
+  private def toListCollectValue(
+    apl: Trees.Apply[?],
+    sel: Trees.Select[?],
+    args: List[Trees.Tree[?]],
+    inferredGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]]
+  )(using Quotes)(using Contexts.Context): Try[Value.Value[Unit, MorphType.Type[Unit]]] =
+    sel match {
+      case Trees.Select(qualifier, _) =>
+        for {
+          returnType <- resolveType(apl, inferredGenericTypeArgs)
+          functionArgument <- getFunctionArgument(args, inferredGenericTypeArgs).flatMap(toFilterMapLambda)
+          functionArgumentType <- functionArgument.extractType
+          listValue <- expandSubTree(qualifier, inferredGenericTypeArgs = None)
+          listType <- listValue.extractType
+          function <- StandardFunctions.getCollectionMethod(sel.symbol, returnType, List(functionArgumentType, listType))
+          partiallyAppliedType <- function.extractType.flatMap {
+            case MorphType.Function(_, _, nextReturnType) => Try(nextReturnType)
+            case other => Failure(Exception(s"Collection method did not resolve to an applicable function type: $other"))
+          }
+          partiallyApplied = Value.Value.Apply(partiallyAppliedType, function, functionArgument)
+        } yield
+          Value.Value.Apply(
+            returnType,
+            partiallyApplied,
+            listValue
+          )
     }
 
   private def toListHigherOrderMethodValue(
@@ -216,6 +262,42 @@ object ApplyMorph extends TreeResolver {
           )
       case other =>
         Failure(Exception(s"foldLeft expects a two-argument lambda, got: ${other.getClass}"))
+    }
+
+  private def toFilterMapLambda(
+    value: Value.Value[Unit, MorphType.Type[Unit]]
+  ): Try[Value.Value[Unit, MorphType.Type[Unit]]] =
+    value match {
+      case Value.Value.Lambda(_, argumentPattern, Value.Value.PatternMatch(_, branchOn, cases)) if cases.size == 1 =>
+        for {
+          outputValueType <- cases.head._2.extractType
+          branchOnType <- branchOn.extractType
+          inputType <- patternType(argumentPattern)
+          maybeOutputType = StandardTypes.maybeReference(List(outputValueType))
+          justConstructor: Value.Value[Unit, MorphType.Type[Unit]] = Value.Value.Constructor(
+            MorphType.Function((), outputValueType, maybeOutputType),
+            morphir.ir.FQName.fqn("morphir.SDK")("maybe")("just")
+          )
+          nothingConstructor: Value.Value[Unit, MorphType.Type[Unit]] = Value.Value.Constructor(
+            maybeOutputType,
+            morphir.ir.FQName.fqn("morphir.SDK")("maybe")("nothing")
+          )
+          transformedCases: List[(Value.Pattern[MorphType.Type[Unit]], Value.Value[Unit, MorphType.Type[Unit]])] = cases.map { case (pattern, body) =>
+            (pattern, Value.Value.Apply(maybeOutputType, justConstructor, body))
+          } :+ (Value.Pattern.WildcardPattern(branchOnType), nothingConstructor)
+          lambdaType = MorphType.Function((), inputType, maybeOutputType)
+        } yield
+          Value.Value.Lambda(
+            lambdaType,
+            argumentPattern,
+            Value.Value.PatternMatch(
+              maybeOutputType,
+              branchOn,
+              transformedCases
+            )
+          )
+      case other =>
+        Failure(Exception(s"collect expects a single-case lambda match, got: ${other.getClass}"))
     }
 
   private def patternType(

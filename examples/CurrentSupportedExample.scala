@@ -100,6 +100,11 @@ object CurrentSupportedExample:
   def thresholdTotal(values: List[Int]): Int =
     values.foldLeft(0)((total, value) => total + value)
 
+  def collectedThresholds(values: List[Option[Int]]): List[Int] =
+    values.collect {
+      case Some(value) => value + 1
+    }
+
   def summedPairs(values: List[(Int, Int)]): List[Int] =
     values.map(pair =>
       pair match
