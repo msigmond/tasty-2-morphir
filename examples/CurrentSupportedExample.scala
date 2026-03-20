@@ -105,6 +105,9 @@ object CurrentSupportedExample:
       case Some(value) => value + 1
     }
 
+  def normalizedSeqThresholds(values: Seq[Int]): Seq[Int] =
+    values.flatMap(value => Seq(value, value + 1))
+
   def summedPairs(values: List[(Int, Int)]): List[Int] =
     values.map(pair =>
       pair match

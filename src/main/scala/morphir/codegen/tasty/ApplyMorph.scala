@@ -51,17 +51,17 @@ object ApplyMorph extends TreeResolver {
             elements
           )
 
-      case Trees.Apply(fun: Trees.TypeApply[?], args) if isListApply(fun) && hasListElements(args) =>
+      case Trees.Apply(fun: Trees.TypeApply[?], args) if isListLikeApply(fun) && hasListElements(args) =>
         for {
           returnType <- resolveType(apl, inferredGenericTypeArgs).orElse {
             inferredGenericTypeArgs match {
               case Some(typeArgs) if typeArgs.size == 1 => Try(StandardTypes.listReference(typeArgs))
-              case _ => Failure(Exception("Could not resolve list type for List()"))
+              case _ => Failure(Exception("Could not resolve collection type for List/Seq apply"))
             }
           }
           elements <- extractListElements(args)
             .map(_.map(expandSubTree(_, returnType.extractGenericTypeArgs.orElse(inferredGenericTypeArgs))).toTryList)
-            .getOrElse(Failure(Exception("Could not extract list elements from List()")))
+            .getOrElse(Failure(Exception("Could not extract collection elements from List/Seq apply")))
         } yield
           Value.Value.List(
             returnType,
@@ -405,13 +405,17 @@ object ApplyMorph extends TreeResolver {
     }
   }
 
-  private def isListApply(fun: Trees.TypeApply[?])(using Quotes)(using Contexts.Context): Boolean =
+  private def isListLikeApply(fun: Trees.TypeApply[?])(using Quotes)(using Contexts.Context): Boolean =
     fun match {
       case Trees.TypeApply(Trees.Select(id: Trees.Ident[?], methodName), _) if methodName.show == "apply" =>
         resolveNamespace(id.symbol) match {
           case "List" :: "scala" :: Nil => true
           case "List" :: "package" :: "scala" :: Nil => true
           case "List" :: "immutable" :: "collection" :: "scala" :: Nil => true
+          case "Seq" :: "scala" :: Nil => true
+          case "Seq" :: "package" :: "scala" :: Nil => true
+          case "Seq" :: "collection" :: "scala" :: Nil => true
+          case "Seq" :: "immutable" :: "collection" :: "scala" :: Nil => true
           case _ => false
         }
       case _ =>

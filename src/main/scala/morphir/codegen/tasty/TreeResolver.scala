@@ -98,6 +98,22 @@ trait TreeResolver {
             StandardTypes.listReference(typeArgs)
           case ("List" :: "immutable" :: "collection" :: "scala" :: Nil, Some(typeArgs)) if typeArgs.size == 1 =>
             StandardTypes.listReference(typeArgs)
+          case ("Seq" :: "scala" :: Nil, Some(typeArgs)) if typeArgs.size == 1 =>
+            StandardTypes.listReference(typeArgs)
+          case ("Seq" :: "package" :: "scala" :: Nil, Some(typeArgs)) if typeArgs.size == 1 =>
+            StandardTypes.listReference(typeArgs)
+          case ("Seq" :: "collection" :: "scala" :: Nil, Some(typeArgs)) if typeArgs.size == 1 =>
+            StandardTypes.listReference(typeArgs)
+          case ("Seq" :: "immutable" :: "collection" :: "scala" :: Nil, Some(typeArgs)) if typeArgs.size == 1 =>
+            StandardTypes.listReference(typeArgs)
+          case ("Seq" :: "scala" :: Nil, Some(typeArgs)) if typeArgs.size == 1 =>
+            StandardTypes.listReference(typeArgs)
+          case ("Seq" :: "package" :: "scala" :: Nil, Some(typeArgs)) if typeArgs.size == 1 =>
+            StandardTypes.listReference(typeArgs)
+          case ("Seq" :: "collection" :: "scala" :: Nil, Some(typeArgs)) if typeArgs.size == 1 =>
+            StandardTypes.listReference(typeArgs)
+          case ("Seq" :: "immutable" :: "collection" :: "scala" :: Nil, Some(typeArgs)) if typeArgs.size == 1 =>
+            StandardTypes.listReference(typeArgs)
           case ("Option" :: "scala" :: Nil, Some(typeArgs)) if typeArgs.size == 1 =>
             StandardTypes.maybeReference(typeArgs)
           case ("Some" :: "scala" :: Nil, Some(typeArgs)) if typeArgs.size == 1 =>
