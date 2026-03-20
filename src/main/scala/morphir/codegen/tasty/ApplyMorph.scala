@@ -21,7 +21,7 @@ object ApplyMorph extends TreeResolver {
             applied <- applyArguments(function, args, returnType.extractGenericTypeArgs)
           } yield
             applied
-        else if isListHigherOrderMethodApply(sel, "map") || isListHigherOrderMethodApply(sel, "filter") then
+        else if isListHigherOrderMethodApply(sel, "map") || isListHigherOrderMethodApply(sel, "filter") || isListHigherOrderMethodApply(sel, "flatMap") then
           toListHigherOrderMethodValue(apl, sel, args, inferredGenericTypeArgs)
         else
           for {
@@ -70,6 +70,9 @@ object ApplyMorph extends TreeResolver {
         toListHigherOrderMethodValue(apl, fun, args, inferredGenericTypeArgs)
 
       case Trees.Apply(fun: Trees.TypeApply[?], args) if isListHigherOrderMethodApply(fun, "filter") =>
+        toListHigherOrderMethodValue(apl, fun, args, inferredGenericTypeArgs)
+
+      case Trees.Apply(fun: Trees.TypeApply[?], args) if isListHigherOrderMethodApply(fun, "flatMap") =>
         toListHigherOrderMethodValue(apl, fun, args, inferredGenericTypeArgs)
 
       case Trees.Apply(fun: Trees.TypeApply[?], args) =>

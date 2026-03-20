@@ -94,6 +94,9 @@ object CurrentSupportedExample:
   def positiveThresholds(values: List[Int]): List[Int] =
     values.filter(value => value > 0)
 
+  def expandedThresholds(values: List[Int]): List[Int] =
+    values.flatMap(value => List(value, value + 1))
+
   def keepsReward(person: Person, reward: Reward): Reward =
     if person.boundedBonus(10L, 20L) > 10L then reward
     else Reward.Bonus(0)

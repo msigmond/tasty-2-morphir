@@ -37,6 +37,8 @@ object StandardFunctions {
         Success(toCurriedFunctionReference(FQName.fqn("morphir.SDK")("list")("map"), returnType, List(functionType, listType)))
       case ("filter" :: _, functionType :: listType :: Nil) if isListType(listType) =>
         Success(toCurriedFunctionReference(FQName.fqn("morphir.SDK")("list")("filter"), returnType, List(functionType, listType)))
+      case ("flatMap" :: _, functionType :: listType :: Nil) if isListType(listType) =>
+        Success(toCurriedFunctionReference(FQName.fqn("morphir.SDK")("list")("concatMap"), returnType, List(functionType, listType)))
       case x =>
         Failure(Exception(s"Collection method for symbol ${symbolNamespace.mkString(",")} not found with args ${argumentTypes.mkString(",")}"))
     }
