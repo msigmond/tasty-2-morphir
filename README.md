@@ -78,7 +78,9 @@ Arguments:
 - `Unit` values via `()`
 - arithmetic operators: `+`, `-`, `*`, `/`
 - boolean operators: `&&`, `||`
+- equality operators: `==`, `!=`
 - comparison operators: `<`, `<=`, `>`, `>=`
+- unary operators: logical negation `!` and numeric negation `-value`
 - function application
 - `if / else`
 - pattern matching for `Option` constructors and supported scalar literal patterns, including `Float`

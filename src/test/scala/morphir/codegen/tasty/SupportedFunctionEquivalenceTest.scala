@@ -54,6 +54,15 @@ class SupportedFunctionEquivalenceTest extends TastyEquivalenceSuite:
     arithmeticCase("smallIntBasics", "SmallIntBasics", "small-int-basics")
   )
 
+  private val operatorCases = List(
+    arithmeticCase("booleanEqual", "BooleanEqual", "boolean-equal"),
+    arithmeticCase("intEqual", "IntEqual", "int-equal"),
+    arithmeticCase("stringNotEqual", "StringNotEqual", "string-not-equal"),
+    arithmeticCase("booleanNot", "BooleanNot", "boolean-not"),
+    arithmeticCase("negateInt", "NegateInt", "negate-int"),
+    arithmeticCase("negateFloat", "NegateFloat", "negate-float")
+  )
+
   private val collectionCases = List(
     arithmeticCase("listEmpty", "ListEmpty", "list-empty"),
     arithmeticCase("listLiteral", "ListLiteral", "list-literal"),
@@ -120,6 +129,7 @@ class SupportedFunctionEquivalenceTest extends TastyEquivalenceSuite:
   private val equivalenceCases =
     scalarCases ++
       foundationalTypeGapCases ++
+      operatorCases ++
       collectionCases ++
       tupleCases ++
       bindingCases ++
