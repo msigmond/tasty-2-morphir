@@ -137,6 +137,11 @@ That catalog anchors future work around three target layers:
 - Elm-core-backed SDK surfaces that Morphir maps into its SDK, including basics/bool, numeric families, list, maybe, result, string/char, and function helpers
 - Morphir-specific SDK modules such as `Decimal`, `Dict`, `Aggregate`, `Key`, `Rule`, `Validate`, `UUID`, `Instant`, `LocalDate`, `LocalTime`, and `Json.*`
 
+Each catalog entry now also records:
+
+- one or more direct Scala source forms that should map to that Morphir surface
+- any important Scala syntactic sugars that should eventually lower to that same Morphir IR
+
 It also records the explicit Elm effect modules that remain out of scope because they do not have a pure Morphir parity target:
 
 - `Debug`

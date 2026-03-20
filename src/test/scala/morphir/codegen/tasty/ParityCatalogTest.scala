@@ -3,6 +3,7 @@ package morphir.codegen.tasty
 import munit.FunSuite
 
 class ParityCatalogTest extends FunSuite:
+  private val includedSurfaces = ParityCatalog.includedTargetSurfaces
 
   test("parity catalog entries have unique ids and non-empty goals") {
     val ids = ParityCatalog.allTargetSurfaces.map(_.id)
@@ -33,6 +34,23 @@ class ParityCatalogTest extends FunSuite:
     )
   }
 
+  test("each included parity surface maps to at least one Scala core form") {
+    assert(
+      includedSurfaces.forall(_.scalaCoreForms.nonEmpty),
+      "Every included parity surface should have at least one Scala core encoding"
+    )
+  }
+
+  test("catalog captures sugar-oriented Scala forms for high-value targets") {
+    val sugaredIds = ParityCatalog.surfacesWithScalaSugars.map(_.id).toSet
+
+    assert(sugaredIds.contains("language-functions-lambdas"))
+    assert(sugaredIds.contains("language-patterns"))
+    assert(sugaredIds.contains("elmcore-list"))
+    assert(sugaredIds.contains("elmcore-maybe"))
+    assert(sugaredIds.contains("sdk-dict"))
+  }
+
   test("parity catalog keeps Elm effect modules explicitly out of scope") {
     assertEquals(
       ParityCatalog.excludedElmCoreModuleNames,
@@ -47,4 +65,9 @@ class ParityCatalogTest extends FunSuite:
     assert(layers.contains(ParityLayer.ElmCore))
     assert(layers.contains(ParityLayer.MorphirSdk))
     assert(layers.contains(ParityLayer.ExcludedElmCore))
+  }
+
+  test("excluded Elm effect modules intentionally have no Scala encodings") {
+    assert(ParityCatalog.excludedElmCoreModules.forall(_.scalaCoreForms.isEmpty))
+    assert(ParityCatalog.excludedElmCoreModules.forall(_.scalaSugarForms.isEmpty))
   }
