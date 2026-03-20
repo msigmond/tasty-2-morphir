@@ -21,6 +21,8 @@ object ApplyMorph extends TreeResolver {
             applied <- applyArguments(function, args, returnType.extractGenericTypeArgs)
           } yield
             applied
+        else if isListHigherOrderMethodApply(sel, "map") || isListHigherOrderMethodApply(sel, "filter") then
+          toListHigherOrderMethodValue(apl, sel, args, inferredGenericTypeArgs)
         else
           for {
             returnType <- resolveType(apl, inferredGenericTypeArgs)
@@ -67,6 +69,9 @@ object ApplyMorph extends TreeResolver {
       case Trees.Apply(fun: Trees.TypeApply[?], args) if isListHigherOrderMethodApply(fun, "map") =>
         toListHigherOrderMethodValue(apl, fun, args, inferredGenericTypeArgs)
 
+      case Trees.Apply(fun: Trees.TypeApply[?], args) if isListHigherOrderMethodApply(fun, "filter") =>
+        toListHigherOrderMethodValue(apl, fun, args, inferredGenericTypeArgs)
+
       case Trees.Apply(fun: Trees.TypeApply[?], args) =>
         for {
           returnType <- resolveType(apl, inferredGenericTypeArgs)
@@ -97,6 +102,20 @@ object ApplyMorph extends TreeResolver {
   )(using Quotes)(using Contexts.Context): Try[Value.Value[Unit, MorphType.Type[Unit]]] =
     fun match {
       case Trees.TypeApply(sel @ Trees.Select(qualifier, _), _) =>
+        toListHigherOrderMethodValue(apl, sel, args, inferredGenericTypeArgs)
+
+      case x =>
+        Failure(Exception(s"List higher-order method could not be processed from: ${x.getClass}"))
+    }
+
+  private def toListHigherOrderMethodValue(
+    apl: Trees.Apply[?],
+    sel: Trees.Select[?],
+    args: List[Trees.Tree[?]],
+    inferredGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]]
+  )(using Quotes)(using Contexts.Context): Try[Value.Value[Unit, MorphType.Type[Unit]]] =
+    sel match {
+      case Trees.Select(qualifier, _) =>
         for {
           returnType <- resolveType(apl, inferredGenericTypeArgs)
           functionArgument <- getFunctionArgument(args, inferredGenericTypeArgs)
@@ -115,9 +134,6 @@ object ApplyMorph extends TreeResolver {
             partiallyApplied,
             listValue
           )
-
-      case x =>
-        Failure(Exception(s"List higher-order method could not be processed from: ${x.getClass}"))
     }
 
   def toValue(apl: Trees.TypeApply[?], inferredGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]])(using Quotes)(using Contexts.Context): Try[Value.Value[Unit, MorphType.Type[Unit]]] = {
@@ -232,6 +248,17 @@ object ApplyMorph extends TreeResolver {
   private def isListHigherOrderMethodApply(fun: Trees.TypeApply[?], methodName: String)(using Quotes)(using Contexts.Context): Boolean =
     fun match {
       case Trees.TypeApply(Trees.Select(qualifier, selectedMethodName), _) if selectedMethodName.show == methodName =>
+        resolveType(qualifier, inferredGenericTypeArgs = None).toOption.exists {
+          case MorphType.Reference(_, fQName, _) => fQName == morphir.ir.FQName.fqn("morphir.SDK")("list")("list")
+          case _ => false
+        }
+      case _ =>
+        false
+    }
+
+  private def isListHigherOrderMethodApply(sel: Trees.Select[?], methodName: String)(using Quotes)(using Contexts.Context): Boolean =
+    sel match {
+      case Trees.Select(qualifier, selectedMethodName) if selectedMethodName.show == methodName =>
         resolveType(qualifier, inferredGenericTypeArgs = None).toOption.exists {
           case MorphType.Reference(_, fQName, _) => fQName == morphir.ir.FQName.fqn("morphir.SDK")("list")("list")
           case _ => false
