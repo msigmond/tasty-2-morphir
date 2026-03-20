@@ -141,6 +141,8 @@ Each catalog entry now also records:
 
 - one or more direct Scala source forms that should map to that Morphir surface
 - any important Scala syntactic sugars that should eventually lower to that same Morphir IR
+- the current coverage state (`supported`, `partial`, `planned`, or explicitly excluded)
+- a concrete gap summary that explains what still blocks full parity for that surface
 
 It also records the explicit Elm effect modules that remain out of scope because they do not have a pure Morphir parity target:
 

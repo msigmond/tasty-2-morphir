@@ -5,6 +5,9 @@ import munit.FunSuite
 class ParityCatalogTest extends FunSuite:
   private val includedSurfaces = ParityCatalog.includedTargetSurfaces
 
+  private def surfaceById(id: String): ParitySurface =
+    ParityCatalog.allTargetSurfaces.find(_.id == id).getOrElse(fail(s"Missing parity surface: $id"))
+
   test("parity catalog entries have unique ids and non-empty goals") {
     val ids = ParityCatalog.allTargetSurfaces.map(_.id)
 
@@ -70,4 +73,19 @@ class ParityCatalogTest extends FunSuite:
   test("excluded Elm effect modules intentionally have no Scala encodings") {
     assert(ParityCatalog.excludedElmCoreModules.forall(_.scalaCoreForms.isEmpty))
     assert(ParityCatalog.excludedElmCoreModules.forall(_.scalaSugarForms.isEmpty))
+  }
+
+  test("gap analysis distinguishes verified support from planned work") {
+    assertEquals(surfaceById("language-modules-packages").currentCoverage, ParityCoverage.Supported)
+    assertEquals(surfaceById("elmcore-result").currentCoverage, ParityCoverage.Planned)
+    assertEquals(surfaceById("sdk-dict").currentCoverage, ParityCoverage.Partial)
+  }
+
+  test("every non-supported target carries a concrete gap summary") {
+    assert(ParityCatalog.gapSurfaces.nonEmpty, "Expected some remaining parity gaps")
+    assert(ParityCatalog.gapSurfaces.forall(_.gapSummary.nonEmpty), "Every gap surface should explain what is missing")
+  }
+
+  test("excluded surfaces stay excluded in the coverage model") {
+    assert(ParityCatalog.excludedElmCoreModules.forall(_.currentCoverage == ParityCoverage.Excluded))
   }
