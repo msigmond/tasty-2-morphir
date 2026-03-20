@@ -26,6 +26,20 @@ object StandardFunctions {
     get(symbol, returnType, None)
   }
 
+  def getCollectionMethod(
+    symbol: Symbols.Symbol,
+    returnType: MorphType.Type[Unit],
+    argumentTypes: List[MorphType.Type[Unit]]
+  )(using Quotes)(using Contexts.Context): Try[Value.Value.Reference[Unit, MorphType.Type[Unit]]] = {
+    val symbolNamespace = resolveNamespace(symbol)
+    (symbolNamespace, argumentTypes) match {
+      case ("map" :: _, functionType :: listType :: Nil) if isListType(listType) =>
+        Success(toCurriedFunctionReference(FQName.fqn("morphir.SDK")("list")("map"), returnType, List(functionType, listType)))
+      case x =>
+        Failure(Exception(s"Collection method for symbol ${symbolNamespace.mkString(",")} not found with args ${argumentTypes.mkString(",")}"))
+    }
+  }
+
   private def get(symbol: Symbols.Symbol, returnType: MorphType.Type[Unit], maybeArgumentType: Option[MorphType.Type[Unit]])(using Quotes)(using Contexts.Context): Try[Value.Value[Unit, MorphType.Type[Unit]]] = {
     val symbolNamespace = resolveNamespace(symbol)
     maybeArgumentType match {
@@ -99,6 +113,19 @@ object StandardFunctions {
         argumentType,
         returnType
       ),
+      fQName
+    )
+  }
+
+  private def toCurriedFunctionReference(
+    fQName: FQName.FQName,
+    returnType: MorphType.Type[Unit],
+    argumentTypes: List[MorphType.Type[Unit]]
+  )(using Quotes)(using Contexts.Context): Value.Value.Reference[Unit, MorphType.Type[Unit]] = {
+    Value.Value.Reference(
+      argumentTypes.foldRight(returnType) { (argumentType, accType) =>
+        MorphType.Function((), argumentType, accType)
+      },
       fQName
     )
   }

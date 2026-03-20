@@ -88,6 +88,9 @@ object CurrentSupportedExample:
   def thresholdCount(values: List[Int]): Int =
     values.length
 
+  def incrementThresholds(values: List[Int]): List[Int] =
+    values.map(value => value + 1)
+
   def keepsReward(person: Person, reward: Reward): Reward =
     if person.boundedBonus(10L, 20L) > 10L then reward
     else Reward.Bonus(0)

@@ -14,6 +14,8 @@ object BlockMorph extends TreeResolver {
 
   def toValue(block: Trees.Block[?], inferredGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]])(using Quotes)(using Contexts.Context): Try[Value.Value[Unit, MorphType.Type[Unit]]] =
     block match {
+      case lambdaBlock if isSingleArgLambdaBlock(lambdaBlock) =>
+        toLambdaValue(lambdaBlock, inferredGenericTypeArgs)
       case Trees.Block(stats, expr) =>
         toValue(stats, expr, inferredGenericTypeArgs)
     }
@@ -89,6 +91,41 @@ object BlockMorph extends TreeResolver {
         Failure(Exception(s"Block statement is not supported: ${x.getClass}"))
     }
   }
+
+  private def toLambdaValue(
+    block: Trees.Block[?],
+    inferredGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]]
+  )(using Quotes)(using Contexts.Context): Try[Value.Value.Lambda[Unit, MorphType.Type[Unit]]] =
+    block match {
+      case Trees.Block((dd: Trees.DefDef[?]) :: Nil, Trees.Closure(_, meth, _)) if meth.symbol == dd.symbol && dd.termParamss.size == 1 && dd.termParamss.head.size == 1 =>
+        val param = dd.termParamss.head.head
+        for {
+          paramType <- resolveType(param, inferredGenericTypeArgs = None)
+          bodyType <- resolveType(dd.rhs, inferredGenericTypeArgs = None)
+          body <- expandSubTree(dd.rhs, bodyType.extractGenericTypeArgs.orElse(inferredGenericTypeArgs))
+          lambdaType = MorphType.Function((), paramType, bodyType)
+        } yield
+          Value.Value.Lambda(
+            lambdaType,
+            Value.Pattern.AsPattern(
+              paramType,
+              Value.Pattern.WildcardPattern(paramType),
+              Name.fromString(param.name.show)
+            ),
+            body
+          )
+
+      case x =>
+        Failure(Exception(s"Lambda block is not supported: ${x.getClass}"))
+    }
+
+  private def isSingleArgLambdaBlock(block: Trees.Block[?])(using Quotes)(using Contexts.Context): Boolean =
+    block match {
+      case Trees.Block((dd: Trees.DefDef[?]) :: Nil, Trees.Closure(_, meth, _)) =>
+        meth.symbol == dd.symbol && dd.termParamss.size == 1 && dd.termParamss.head.size == 1
+      case _ =>
+        false
+    }
 
   private case class TupleDestructuringStat(
     pattern: Value.Pattern.TuplePattern[MorphType.Type[Unit]],

@@ -62,7 +62,7 @@ Arguments:
 - `String`
 - `BigDecimal`
 - `Option[T]`
-- `List[T]` for the current narrow empty-list, direct `List(...)` literal, nested-list literal, and direct `length` slices
+- `List[T]` for the current narrow empty-list, direct `List(...)` literal, nested-list literal, direct `length`, and direct single-lambda `map` slices
 - narrow Scala `enum` custom types, including direct constructor payloads up to the current two-argument slice
 - Scala tuples, currently the direct `(A, B)` value/type slice
 - Scala `case class` data fields, including generic multi-parameter and nested record references
@@ -87,6 +87,7 @@ Arguments:
 - populated list values via `List(...)`
 - nested list literals such as `List(List(1, 2), List(3))`
 - direct `List.length`
+- direct `List.map` with a single-argument lambda whose body stays within the supported expression surface
 
 ### Mapping notes
 
@@ -98,6 +99,7 @@ Arguments:
 - Scala `Char` maps to Morphir `char`
 - Scala `List[T]` maps to Morphir `morphir.SDK.list.list[T]`
 - Scala `List.length` maps to Morphir `morphir.SDK.list.length`
+- Scala `List.map` maps to Morphir `morphir.SDK.list.map`
 - Scala `TupleN` maps to Morphir tuple types and tuple values
 - Scala case classes are emitted as Morphir `type alias` records
 - narrow case-class methods are emitted as module values with an explicit record receiver input, including the current two-explicit-parameter slice
@@ -123,20 +125,32 @@ Unrelated package roots still fail fast.
 
 ## Upcoming feature roadmap
 
-This is the current ordered plan for the next **5** supportable `tastyToMorphirIR` features.
+This is the current ordered plan for the next **10** supportable `tastyToMorphirIR` features.
+
+This roadmap is intentionally collection-focused and prioritizes exact-parity, value-producing collection operations before broader or side-effect-oriented traversal shapes.
 
 Keep this section updated as the roadmap changes.
 
-1. **Broader user-defined ADTs**  
-   Build on the new flat three-argument enum-constructor slice by adding richer constructor families only where full Elm parity remains exact.
-2. **Broader literal widening**  
-   Build on the new float-literal-pattern parity slice only where the Morphir target type stays explicit and exact Elm parity remains stable.
-3. **Broader collections support**  
-   Build on the new direct-`List.length` parity slice by adding more collection operations only where exact Elm parity remains stable.
-4. **Broader case-class methods**  
-   Build on the new two-explicit-parameter conditional-method slice by adding slightly richer method shapes only where full Elm parity remains exact.
-5. **Broader tuple destructuring**  
-   Build on the new flat 4-tuple match and local-`val` parity slices by adding richer tuple-pattern shapes only where exact Elm parity stays stable.
+1. **List `filter` support**  
+   Add exact Elm-parity support for `List.filter` where the predicate stays within the already-supported expression surface.
+2. **List `flatMap` support**  
+   Add exact Elm-parity support for `List.flatMap` where each element expands to another supported `List`.
+3. **List folds**  
+   Add `foldLeft` / fold-style support for supported accumulator and element types, starting with arithmetic and simple record accumulators.
+4. **Pattern-aware list `map` / `flatMap`**  
+   Support element destructuring and explicit `match` expressions inside list transforms, starting with tuples and existing ADT shapes.
+5. **List `collect`**  
+   Add a narrow `collect` slice by lowering supported partial-function patterns only where exact Elm parity remains stable.
+6. **`Seq[T]` normalization**  
+   Normalize the most common immutable `Seq` shapes onto the proven list path, starting with literals plus `map` / `flatMap` / `foldLeft`.
+7. **`Map[K, V]` types and literals**  
+   Add narrow `Map` type/literal support only for key/value shapes that can be matched exactly against Elm-generated Morphir baselines.
+8. **Core `Map` operations**  
+   Add the safest exact-parity `Map` operations next, likely starting with lookup and fold-oriented shapes before broader transforms.
+9. **`foreach` and `for`-style traversal**  
+    Explore constrained support for pure traversal shapes only after the value-returning collection operators above are stable and well baselined.
+10. **Collection predicates**  
+    Add narrow exact-parity support for predicate-style collection queries such as `List.exists` / `List.forall` once the core transform and fold paths are stable.
 
 ## Test suite
 
@@ -196,7 +210,7 @@ The tests compare full generated JSON distributions directly, so Scala and Elm n
 - generic case classes are supported for the current narrow slice, including multi-parameter data-only records and nested record references
 - user-defined ADTs are currently limited to Scala `enum` cases with the current direct-constructor slice up to three constructor arguments
 - additional literal widening currently covers `Long`, `Char`, direct `String` literals, and `Float` literal patterns; other scalar literal expansions remain unsupported
-- collection support is currently limited to `List[T]` types plus direct `List(...)` literals, nested-list literals, and empty-list values (`List()` and `Nil`)
+- collection support is currently limited to `List[T]` types plus direct `List(...)` literals, nested-list literals, empty-list values (`List()` and `Nil`), direct `List.length`, and a narrow direct-lambda `List.map` slice
 - case-class methods are currently limited to direct methods on the case class plus at most two explicit parameters, with supported bodies staying within the current expression surface
 - tuple destructuring is currently limited to narrow flat tuple-match and local-`val` slices up to the current 4-tuple coverage; broader tuple patterns are still unsupported
 - many Scala constructs are still unsupported, including broader ADT families, collection operations, and richer tuple or case-method shapes

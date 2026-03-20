@@ -67,6 +67,7 @@ object MorphUtils {
       case Value.Value.Reference(t, _) => Success(t)
       case Value.Value.Constructor(t, _) => Success(t)
       case Value.Value.Field(t, _, _) => Success(t)
+      case Value.Value.Lambda(t, _, _) => Success(t)
       case Value.Value.IfThenElse(t, _, _, _) => Success(t)
       case Value.Value.LetDefinition(t, _, _, _) => Success(t)
       case Value.Value.PatternMatch(t, _, _) => Success(t)

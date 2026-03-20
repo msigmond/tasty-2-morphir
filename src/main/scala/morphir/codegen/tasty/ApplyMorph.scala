@@ -64,6 +64,9 @@ object ApplyMorph extends TreeResolver {
             elements
           )
 
+      case Trees.Apply(fun: Trees.TypeApply[?], args) if isListHigherOrderMethodApply(fun, "map") =>
+        toListHigherOrderMethodValue(apl, fun, args, inferredGenericTypeArgs)
+
       case Trees.Apply(fun: Trees.TypeApply[?], args) =>
         for {
           returnType <- resolveType(apl, inferredGenericTypeArgs)
@@ -85,6 +88,37 @@ object ApplyMorph extends TreeResolver {
           applied
     }
   }
+
+  private def toListHigherOrderMethodValue(
+    apl: Trees.Apply[?],
+    fun: Trees.TypeApply[?],
+    args: List[Trees.Tree[?]],
+    inferredGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]]
+  )(using Quotes)(using Contexts.Context): Try[Value.Value[Unit, MorphType.Type[Unit]]] =
+    fun match {
+      case Trees.TypeApply(sel @ Trees.Select(qualifier, _), _) =>
+        for {
+          returnType <- resolveType(apl, inferredGenericTypeArgs)
+          functionArgument <- getFunctionArgument(args, inferredGenericTypeArgs)
+          functionArgumentType <- functionArgument.extractType
+          listValue <- expandSubTree(qualifier, inferredGenericTypeArgs = None)
+          listType <- listValue.extractType
+          function <- StandardFunctions.getCollectionMethod(sel.symbol, returnType, List(functionArgumentType, listType))
+          partiallyAppliedType <- function.extractType.flatMap {
+            case MorphType.Function(_, _, nextReturnType) => Try(nextReturnType)
+            case other => Failure(Exception(s"Collection method did not resolve to an applicable function type: $other"))
+          }
+          partiallyApplied = Value.Value.Apply(partiallyAppliedType, function, functionArgument)
+        } yield
+          Value.Value.Apply(
+            returnType,
+            partiallyApplied,
+            listValue
+          )
+
+      case x =>
+        Failure(Exception(s"List higher-order method could not be processed from: ${x.getClass}"))
+    }
 
   def toValue(apl: Trees.TypeApply[?], inferredGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]])(using Quotes)(using Contexts.Context): Try[Value.Value[Unit, MorphType.Type[Unit]]] = {
     apl match {
@@ -189,6 +223,17 @@ object ApplyMorph extends TreeResolver {
           case "List" :: "scala" :: Nil => true
           case "List" :: "package" :: "scala" :: Nil => true
           case "List" :: "immutable" :: "collection" :: "scala" :: Nil => true
+          case _ => false
+        }
+      case _ =>
+        false
+    }
+
+  private def isListHigherOrderMethodApply(fun: Trees.TypeApply[?], methodName: String)(using Quotes)(using Contexts.Context): Boolean =
+    fun match {
+      case Trees.TypeApply(Trees.Select(qualifier, selectedMethodName), _) if selectedMethodName.show == methodName =>
+        resolveType(qualifier, inferredGenericTypeArgs = None).toOption.exists {
+          case MorphType.Reference(_, fQName, _) => fQName == morphir.ir.FQName.fqn("morphir.SDK")("list")("list")
           case _ => false
         }
       case _ =>
