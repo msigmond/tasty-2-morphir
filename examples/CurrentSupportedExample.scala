@@ -111,6 +111,9 @@ object CurrentSupportedExample:
   def thresholdMap: Map[String, Int] =
     Map("low" -> 10, "high" -> 20)
 
+  def thresholdValue(name: String, values: Map[String, Int]): Option[Int] =
+    values.get(name)
+
   def summedPairs(values: List[(Int, Int)]): List[Int] =
     values.map(pair =>
       pair match

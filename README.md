@@ -98,6 +98,7 @@ Arguments:
 - normalized immutable `Seq.map` / `Seq.flatMap` / `Seq.foldLeft` over the current supported lambda-expression surface
 - narrow immutable `Map(...)` literals built from direct `key -> value` pairs
 - narrow immutable `Map[K, V]` pass-through signatures
+- narrow immutable `Map.get` lookups that return `Option` / Morphir `Maybe`
 - pattern-aware list transforms via explicit `match` expressions inside supported list lambdas, starting with tuple matches
 
 ### Mapping notes
@@ -118,6 +119,7 @@ Arguments:
 - narrow immutable Scala `Seq[T]` currently normalizes to the same Morphir `morphir.SDK.list.list[T]` path as `List[T]`
 - narrow immutable Scala `Map[K, V]` currently maps to Morphir `morphir.SDK.dict.dict[K, V]`
 - narrow immutable Scala `Map(...)` literals currently map to Morphir `morphir.SDK.dict.fromList`
+- narrow immutable Scala `Map.get` currently maps to Morphir `morphir.SDK.dict.get`
 - Scala `TupleN` maps to Morphir tuple types and tuple values
 - Scala case classes are emitted as Morphir `type alias` records
 - narrow case-class methods are emitted as module values with an explicit record receiver input, including the current two-explicit-parameter slice
@@ -149,26 +151,26 @@ This roadmap is intentionally collection-focused and prioritizes exact-parity, v
 
 Keep this section updated as the roadmap changes.
 
-1. **Core `Map` operations**  
-   Add the safest exact-parity `Map` operations next, likely starting with lookup and fold-oriented shapes before broader transforms.
-2. **`foreach` and `for`-style traversal**  
+1. **`foreach` and `for`-style traversal**  
      Explore constrained support for pure traversal shapes only after the value-returning collection operators above are stable and well baselined.
-3. **Collection predicates**  
+2. **Collection predicates**  
      Add narrow exact-parity support for predicate-style collection queries such as `List.exists` / `List.forall` once the core transform and fold paths are stable.
-4. **Collection concatenation**
+3. **Collection concatenation**
      Add exact-parity support for safe list-concatenation shapes such as `++` / append once the main transform, fold, and predicate slices are stable.
-5. **Collection zipping**
+4. **Collection zipping**
      Add narrow exact-parity support for tuple-producing shapes such as `zip` once fold and pattern-aware collection support are stable enough to consume the resulting tuples.
-6. **Collection partitioning**
+5. **Collection partitioning**
      Add exact-parity support for narrow partition-style collection splits once predicate and tuple-consuming collection operations are in place.
-7. **Pattern-aware flat-mapped ADTs**
+6. **Pattern-aware flat-mapped ADTs**
      Extend the current explicit-match collection support from tuple-based lambdas to narrow ADT-oriented `map` / `flatMap` shapes over already-supported enums.
-8. **Nested collection folds**
+7. **Nested collection folds**
      Extend the current fold support to safe nested collection shapes once `Seq` normalization and core list predicate/concatenation slices are stable.
-9. **Pattern-aware collection predicates**
+8. **Pattern-aware collection predicates**
      Extend the current explicit-match collection support to safe predicate-style collection queries over tuples and already-supported ADTs.
-10. **Map transformation pipelines**
+9. **Map transformation pipelines**
      Extend the current narrow dict surface from literals and simple signatures to safe transformation pipelines once the first lookup/fold operations are stable.
+10. **Broader map folds**
+     Extend the current narrow dict surface from `get` and literals to exact-parity fold-style map traversals once lookup and pipeline shapes are stable.
 
 ## Test suite
 

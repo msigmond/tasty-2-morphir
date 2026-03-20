@@ -21,6 +21,8 @@ object ApplyMorph extends TreeResolver {
             applied <- applyArguments(function, args, returnType.extractGenericTypeArgs)
           } yield
             applied
+        else if isMapMethodApply(sel, "get") then
+          toMapGetValue(apl, sel, args, inferredGenericTypeArgs)
         else if isListHigherOrderMethodApply(sel, "map") || isListHigherOrderMethodApply(sel, "filter") || isListHigherOrderMethodApply(sel, "flatMap") then
           toListHigherOrderMethodValue(apl, sel, args, inferredGenericTypeArgs)
         else if isListHigherOrderMethodApply(sel, "collect") then
@@ -340,6 +342,38 @@ object ApplyMorph extends TreeResolver {
         entryList
       )
 
+  private def toMapGetValue(
+    apl: Trees.Apply[?],
+    sel: Trees.Select[?],
+    args: List[Trees.Tree[?]],
+    inferredGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]]
+  )(using Quotes)(using Contexts.Context): Try[Value.Value[Unit, MorphType.Type[Unit]]] =
+    sel match {
+      case Trees.Select(qualifier, _) =>
+        for {
+          returnType <- resolveType(apl, inferredGenericTypeArgs)
+          dictValue <- expandSubTree(qualifier, inferredGenericTypeArgs = None)
+          dictType <- dictValue.extractType
+          keyValue <- getFunctionArgument(args, dictType.extractGenericTypeArgs.flatMap(_.headOption.map(List(_))))
+          keyType <- keyValue.extractType
+          functionType = MorphType.Function((), keyType, MorphType.Function((), dictType, returnType))
+          getReference: Value.Value[Unit, MorphType.Type[Unit]] = Value.Value.Reference(
+            functionType,
+            morphir.ir.FQName.fqn("morphir.SDK")("dict")("get")
+          )
+          partiallyApplied = Value.Value.Apply(
+            MorphType.Function((), dictType, returnType),
+            getReference,
+            keyValue
+          )
+        } yield
+          Value.Value.Apply(
+            returnType,
+            partiallyApplied,
+            dictValue
+          )
+    }
+
   private def toMapEntryValue(
     entry: Trees.Tree[?]
   )(using Quotes)(using Contexts.Context): Try[Value.Value[Unit, MorphType.Type[Unit]]] =
@@ -536,6 +570,17 @@ object ApplyMorph extends TreeResolver {
       case "Map" :: "collection" :: "scala" :: Nil => true
       case "Map" :: "immutable" :: "collection" :: "scala" :: Nil => true
       case _ => false
+    }
+
+  private def isMapMethodApply(sel: Trees.Select[?], methodName: String)(using Quotes)(using Contexts.Context): Boolean =
+    sel match {
+      case Trees.Select(qualifier, selectedMethodName) if selectedMethodName.show == methodName =>
+        resolveType(qualifier, inferredGenericTypeArgs = None).toOption.exists {
+          case MorphType.Reference(_, fQName, _) => fQName == morphir.ir.FQName.fqn("morphir.SDK")("dict")("dict")
+          case _ => false
+        }
+      case _ =>
+        false
     }
 
   private def isListHigherOrderMethodApply(fun: Trees.TypeApply[?], methodName: String)(using Quotes)(using Contexts.Context): Boolean =
