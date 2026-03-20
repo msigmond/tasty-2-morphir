@@ -31,6 +31,7 @@ class SupportedFunctionEquivalenceTest extends TastyEquivalenceSuite:
     arithmeticCase("listMapIncrement", "ListMapIncrement", "list-map-increment"),
     arithmeticCase("listFilterPositive", "ListFilterPositive", "list-filter-positive"),
     arithmeticCase("listFlatMapExpand", "ListFlatMapExpand", "list-flatmap-expand"),
+    arithmeticCase("listFoldSum", "ListFoldSum", "list-fold-sum"),
     arithmeticCase("tupleLiteral", "TupleLiteral", "tuple-literal"),
     arithmeticCase("tuplePassThrough", "TuplePassThrough", "tuple-pass-through"),
     arithmeticCase("extractFirst", "ExtractFirst", "extract-first"),

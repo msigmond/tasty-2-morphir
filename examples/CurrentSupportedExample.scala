@@ -97,6 +97,9 @@ object CurrentSupportedExample:
   def expandedThresholds(values: List[Int]): List[Int] =
     values.flatMap(value => List(value, value + 1))
 
+  def thresholdTotal(values: List[Int]): Int =
+    values.foldLeft(0)((total, value) => total + value)
+
   def keepsReward(person: Person, reward: Reward): Reward =
     if person.boundedBonus(10L, 20L) > 10L then reward
     else Reward.Bonus(0)

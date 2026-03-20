@@ -14,7 +14,7 @@ object BlockMorph extends TreeResolver {
 
   def toValue(block: Trees.Block[?], inferredGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]])(using Quotes)(using Contexts.Context): Try[Value.Value[Unit, MorphType.Type[Unit]]] =
     block match {
-      case lambdaBlock if isSingleArgLambdaBlock(lambdaBlock) =>
+      case lambdaBlock if isLambdaBlock(lambdaBlock) =>
         toLambdaValue(lambdaBlock, inferredGenericTypeArgs)
       case Trees.Block(stats, expr) =>
         toValue(stats, expr, inferredGenericTypeArgs)
@@ -95,34 +95,46 @@ object BlockMorph extends TreeResolver {
   private def toLambdaValue(
     block: Trees.Block[?],
     inferredGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]]
-  )(using Quotes)(using Contexts.Context): Try[Value.Value.Lambda[Unit, MorphType.Type[Unit]]] =
+  )(using Quotes)(using Contexts.Context): Try[Value.Value[Unit, MorphType.Type[Unit]]] =
     block match {
-      case Trees.Block((dd: Trees.DefDef[?]) :: Nil, Trees.Closure(_, meth, _)) if meth.symbol == dd.symbol && dd.termParamss.size == 1 && dd.termParamss.head.size == 1 =>
-        val param = dd.termParamss.head.head
+      case Trees.Block((dd: Trees.DefDef[?]) :: Nil, Trees.Closure(_, meth, _)) if meth.symbol == dd.symbol && dd.termParamss.size == 1 && dd.termParamss.head.nonEmpty =>
+        val params = dd.termParamss.head
         for {
-          paramType <- resolveType(param, inferredGenericTypeArgs = None)
+          paramTypes <- params.map(resolveType(_, inferredGenericTypeArgs = None)).toTryList
           bodyType <- resolveType(dd.rhs, inferredGenericTypeArgs = None)
           body <- expandSubTree(dd.rhs, bodyType.extractGenericTypeArgs.orElse(inferredGenericTypeArgs))
-          lambdaType = MorphType.Function((), paramType, bodyType)
+          lambda <- buildLambdaValue(params.zip(paramTypes), body)
         } yield
-          Value.Value.Lambda(
-            lambdaType,
-            Value.Pattern.AsPattern(
-              paramType,
-              Value.Pattern.WildcardPattern(paramType),
-              Name.fromString(param.name.show)
-            ),
-            body
-          )
+          lambda
 
       case x =>
         Failure(Exception(s"Lambda block is not supported: ${x.getClass}"))
     }
 
-  private def isSingleArgLambdaBlock(block: Trees.Block[?])(using Quotes)(using Contexts.Context): Boolean =
+  private def buildLambdaValue(
+    paramsWithTypes: List[(Trees.ValDef[?], MorphType.Type[Unit])],
+    body: Value.Value[Unit, MorphType.Type[Unit]]
+  ): Try[Value.Value[Unit, MorphType.Type[Unit]]] =
+    paramsWithTypes.reverse.foldLeft(Try(body: Value.Value[Unit, MorphType.Type[Unit]])) { case (innerTry, (param, paramType)) =>
+      for {
+        innerBody <- innerTry
+        innerType <- innerBody.extractType
+      } yield
+        Value.Value.Lambda(
+          MorphType.Function((), paramType, innerType),
+          Value.Pattern.AsPattern(
+            paramType,
+            Value.Pattern.WildcardPattern(paramType),
+            Name.fromString(param.name.toString)
+          ),
+          innerBody
+        )
+    }
+
+  private def isLambdaBlock(block: Trees.Block[?])(using Quotes)(using Contexts.Context): Boolean =
     block match {
       case Trees.Block((dd: Trees.DefDef[?]) :: Nil, Trees.Closure(_, meth, _)) =>
-        meth.symbol == dd.symbol && dd.termParamss.size == 1 && dd.termParamss.head.size == 1
+        meth.symbol == dd.symbol && dd.termParamss.size == 1 && dd.termParamss.head.nonEmpty
       case _ =>
         false
     }

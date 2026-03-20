@@ -75,6 +75,9 @@ object ApplyMorph extends TreeResolver {
       case Trees.Apply(fun: Trees.TypeApply[?], args) if isListHigherOrderMethodApply(fun, "flatMap") =>
         toListHigherOrderMethodValue(apl, fun, args, inferredGenericTypeArgs)
 
+      case Trees.Apply(fun: Trees.Apply[?], args) if isListFoldLeftApply(fun) =>
+        toListFoldLeftValue(apl, fun, args, inferredGenericTypeArgs)
+
       case Trees.Apply(fun: Trees.TypeApply[?], args) =>
         for {
           returnType <- resolveType(apl, inferredGenericTypeArgs)
@@ -137,6 +140,91 @@ object ApplyMorph extends TreeResolver {
             partiallyApplied,
             listValue
           )
+    }
+
+  private def toListFoldLeftValue(
+    apl: Trees.Apply[?],
+    fun: Trees.Apply[?],
+    args: List[Trees.Tree[?]],
+    inferredGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]]
+  )(using Quotes)(using Contexts.Context): Try[Value.Value[Unit, MorphType.Type[Unit]]] =
+    fun match {
+      case Trees.Apply(sel: Trees.Select[?], initArgs) =>
+        toListFoldLeftValue(apl, sel, initArgs, args, inferredGenericTypeArgs)
+      case Trees.Apply(Trees.TypeApply(sel: Trees.Select[?], _), initArgs) =>
+        toListFoldLeftValue(apl, sel, initArgs, args, inferredGenericTypeArgs)
+      case x =>
+        Failure(Exception(s"List foldLeft could not be processed from: ${x.getClass}"))
+    }
+
+  private def toListFoldLeftValue(
+    apl: Trees.Apply[?],
+    sel: Trees.Select[?],
+    initArgs: List[Trees.Tree[?]],
+    functionArgs: List[Trees.Tree[?]],
+    inferredGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]]
+  )(using Quotes)(using Contexts.Context): Try[Value.Value[Unit, MorphType.Type[Unit]]] =
+    sel match {
+      case Trees.Select(qualifier, _) =>
+        for {
+          returnType <- resolveType(apl, inferredGenericTypeArgs)
+          initValue <- getFunctionArgument(initArgs, inferredGenericTypeArgs)
+          initType <- initValue.extractType
+          functionArgument <- getFunctionArgument(functionArgs, inferredGenericTypeArgs).flatMap(reorderFoldLeftLambda)
+          functionArgumentType <- functionArgument.extractType
+          listValue <- expandSubTree(qualifier, inferredGenericTypeArgs = None)
+          listType <- listValue.extractType
+          function <- StandardFunctions.getCollectionMethod(sel.symbol, returnType, List(functionArgumentType, initType, listType))
+          withFunction <- applyValueArgument(function, functionArgument)
+          withInit <- applyValueArgument(withFunction, initValue)
+          withList <- applyValueArgument(withInit, listValue)
+        } yield
+          withList
+    }
+
+  private def applyValueArgument(
+    function: Value.Value[Unit, MorphType.Type[Unit]],
+    argument: Value.Value[Unit, MorphType.Type[Unit]]
+  ): Try[Value.Value.Apply[Unit, MorphType.Type[Unit]]] =
+    function.extractType.flatMap {
+      case MorphType.Function(_, _, returnType) =>
+        Try(Value.Value.Apply(returnType, function, argument))
+      case other =>
+        Failure(Exception(s"Cannot apply value argument to non-function type: $other"))
+    }
+
+  private def reorderFoldLeftLambda(
+    value: Value.Value[Unit, MorphType.Type[Unit]]
+  ): Try[Value.Value[Unit, MorphType.Type[Unit]]] =
+    value match {
+      case Value.Value.Lambda(_, accPattern, inner @ Value.Value.Lambda(_, valuePattern, body)) =>
+        for {
+          accType <- patternType(accPattern)
+          valueType <- patternType(valuePattern)
+          bodyType <- body.extractType
+          innerLambdaType = MorphType.Function((), accType, bodyType)
+          outerLambdaType = MorphType.Function((), valueType, innerLambdaType)
+        } yield
+          Value.Value.Lambda(
+            outerLambdaType,
+            valuePattern,
+            Value.Value.Lambda(
+              innerLambdaType,
+              accPattern,
+              body
+            )
+          )
+      case other =>
+        Failure(Exception(s"foldLeft expects a two-argument lambda, got: ${other.getClass}"))
+    }
+
+  private def patternType(
+    pattern: Value.Pattern[MorphType.Type[Unit]]
+  ): Try[MorphType.Type[Unit]] =
+    pattern match {
+      case Value.Pattern.AsPattern(t, _, _) => Try(t)
+      case Value.Pattern.WildcardPattern(t) => Try(t)
+      case other => Failure(Exception(s"Unsupported foldLeft lambda pattern: ${other.getClass}"))
     }
 
   def toValue(apl: Trees.TypeApply[?], inferredGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]])(using Quotes)(using Contexts.Context): Try[Value.Value[Unit, MorphType.Type[Unit]]] = {
@@ -269,6 +357,19 @@ object ApplyMorph extends TreeResolver {
       case _ =>
         false
     }
+
+  private def isListFoldLeftApply(fun: Trees.Apply[?])(using Quotes)(using Contexts.Context): Boolean =
+    fun match {
+      case Trees.Apply(sel: Trees.Select[?], initArgs) =>
+        initArgs.size == 1 && isListFoldLeftApply(sel)
+      case Trees.Apply(Trees.TypeApply(sel: Trees.Select[?], _), initArgs) =>
+        initArgs.size == 1 && isListFoldLeftApply(sel)
+      case _ =>
+        false
+    }
+
+  private def isListFoldLeftApply(sel: Trees.Select[?])(using Quotes)(using Contexts.Context): Boolean =
+    isListHigherOrderMethodApply(sel, "foldLeft")
 
   private def hasListElements(args: List[Trees.Tree[?]]): Boolean =
     extractListElements(args).nonEmpty
