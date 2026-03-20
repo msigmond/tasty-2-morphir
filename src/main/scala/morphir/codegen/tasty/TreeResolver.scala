@@ -10,6 +10,25 @@ import scala.quoted.Quotes
 import scala.util.{Failure, Success, Try}
 
 trait TreeResolver {
+  private val scalaListTypeNamespaces = Set(
+    List("List", "scala"),
+    List("List", "package", "scala"),
+    List("List", "immutable", "collection", "scala")
+  )
+
+  private val scalaSeqTypeNamespaces = Set(
+    List("Seq", "scala"),
+    List("Seq", "package", "scala"),
+    List("Seq", "collection", "scala"),
+    List("Seq", "immutable", "collection", "scala")
+  )
+
+  private val scalaMapTypeNamespaces = Set(
+    List("Map", "scala"),
+    List("Map", "package", "scala"),
+    List("Map", "collection", "scala"),
+    List("Map", "immutable", "collection", "scala")
+  )
 
   def resolveType(tree: Trees.Tree[?], inferredGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]])(using Quotes)(using Contexts.Context): Try[MorphType.Type[Unit]] = {
     resolveTypeOpt(tree.typeOpt, inferredGenericTypeArgs)
@@ -92,27 +111,11 @@ trait TreeResolver {
             StandardTypes.decimalReference
           case (tupleName :: "scala" :: Nil, Some(typeArgs)) if isTupleTypeName(tupleName, typeArgs.size) =>
             MorphType.Tuple((), typeArgs)
-          case ("List" :: "scala" :: Nil, Some(typeArgs)) if typeArgs.size == 1 =>
+          case (namespace, Some(typeArgs)) if matchesParameterizedReference(namespace, scalaListTypeNamespaces, typeArgs, 1) =>
             StandardTypes.listReference(typeArgs)
-          case ("List" :: "package" :: "scala" :: Nil, Some(typeArgs)) if typeArgs.size == 1 =>
+          case (namespace, Some(typeArgs)) if matchesParameterizedReference(namespace, scalaSeqTypeNamespaces, typeArgs, 1) =>
             StandardTypes.listReference(typeArgs)
-          case ("List" :: "immutable" :: "collection" :: "scala" :: Nil, Some(typeArgs)) if typeArgs.size == 1 =>
-            StandardTypes.listReference(typeArgs)
-          case ("Seq" :: "scala" :: Nil, Some(typeArgs)) if typeArgs.size == 1 =>
-            StandardTypes.listReference(typeArgs)
-          case ("Seq" :: "package" :: "scala" :: Nil, Some(typeArgs)) if typeArgs.size == 1 =>
-            StandardTypes.listReference(typeArgs)
-          case ("Seq" :: "collection" :: "scala" :: Nil, Some(typeArgs)) if typeArgs.size == 1 =>
-            StandardTypes.listReference(typeArgs)
-          case ("Seq" :: "immutable" :: "collection" :: "scala" :: Nil, Some(typeArgs)) if typeArgs.size == 1 =>
-            StandardTypes.listReference(typeArgs)
-          case ("Map" :: "scala" :: Nil, Some(typeArgs)) if typeArgs.size == 2 =>
-            StandardTypes.dictReference(typeArgs)
-          case ("Map" :: "package" :: "scala" :: Nil, Some(typeArgs)) if typeArgs.size == 2 =>
-            StandardTypes.dictReference(typeArgs)
-          case ("Map" :: "collection" :: "scala" :: Nil, Some(typeArgs)) if typeArgs.size == 2 =>
-            StandardTypes.dictReference(typeArgs)
-          case ("Map" :: "immutable" :: "collection" :: "scala" :: Nil, Some(typeArgs)) if typeArgs.size == 2 =>
+          case (namespace, Some(typeArgs)) if matchesParameterizedReference(namespace, scalaMapTypeNamespaces, typeArgs, 2) =>
             StandardTypes.dictReference(typeArgs)
           case ("Option" :: "scala" :: Nil, Some(typeArgs)) if typeArgs.size == 1 =>
             StandardTypes.maybeReference(typeArgs)
@@ -139,6 +142,14 @@ trait TreeResolver {
       .stripPrefix("Tuple")
       .toIntOption
       .contains(arity)
+
+  private def matchesParameterizedReference(
+    symbolNamespace: List[String],
+    expectedNamespaces: Set[List[String]],
+    typeArgs: MorphList.List[MorphType.Type[Unit]],
+    expectedArity: Int
+  ): Boolean =
+    expectedNamespaces.contains(symbolNamespace) && typeArgs.size == expectedArity
 
   private def resolveTypeParameter(
     typeParamSymbol: Symbols.Symbol,

@@ -127,6 +127,23 @@ Arguments:
 - narrow Scala `enum` families are emitted as Morphir custom types
 - generic case-class fields preserve declared type-parameter order and substitute concrete nested type arguments during field access
 
+## Parity target catalog
+
+The broader parity target is now tracked explicitly in `src/main/scala/morphir/codegen/tasty/ParityCatalog.scala`.
+
+That catalog anchors future work around three target layers:
+
+- Morphir language surfaces such as modules, aliases, records, custom types, literals, functions, branching, tuples, and patterns
+- Elm-core-backed SDK surfaces that Morphir maps into its SDK, including basics/bool, numeric families, list, maybe, result, string/char, and function helpers
+- Morphir-specific SDK modules such as `Decimal`, `Dict`, `Aggregate`, `Key`, `Rule`, `Validate`, `UUID`, `Instant`, `LocalDate`, `LocalTime`, and `Json.*`
+
+It also records the explicit Elm effect modules that remain out of scope because they do not have a pure Morphir parity target:
+
+- `Debug`
+- `Platform`
+- `Process`
+- `Task`
+
 ### Multiple input `.tasty` files
 
 The converter can merge multiple related `.tasty` files into one Morphir distribution.

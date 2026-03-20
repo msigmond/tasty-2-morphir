@@ -10,7 +10,7 @@ package morphir.codegen.tasty
   */
 class SupportedFunctionEquivalenceTest extends TastyEquivalenceSuite:
 
-  private val equivalenceCases = List(
+  private val scalarCases = List(
     arithmeticCase("add", "Add", "add"),
     arithmeticCase("subtract", "Subtract", "subtract"),
     arithmeticCase("multiply", "Multiply", "multiply"),
@@ -24,6 +24,20 @@ class SupportedFunctionEquivalenceTest extends TastyEquivalenceSuite:
     arithmeticCase("doubleAdd", "DoubleAdd", "double-add"),
     arithmeticCase("longLiteral", "LongLiteral", "long-literal"),
     arithmeticCase("longAdd", "LongAdd", "long-add"),
+    arithmeticCase("clamp", "Clamp", "clamp"),
+    arithmeticCase("integerDivide", "IntegerDivide", "integer-divide"),
+    arithmeticCase("helperCall", "HelperCall", "helper-call"),
+    arithmeticCase("curriedHelperCall", "CurriedHelperCall", "curried-helper-call"),
+    arithmeticCase("decimalAdd", "DecimalAdd", "decimal-add"),
+    arithmeticCase("decimalSubtract", "DecimalSubtract", "decimal-subtract"),
+    arithmeticCase("decimalMultiply", "DecimalMultiply", "decimal-multiply"),
+    arithmeticCase("decimalLt", "DecimalLt", "decimal-lt"),
+    arithmeticCase("decimalLte", "DecimalLte", "decimal-lte"),
+    arithmeticCase("decimalGt", "DecimalGt", "decimal-gt"),
+    arithmeticCase("decimalGte", "DecimalGte", "decimal-gte")
+  )
+
+  private val collectionCases = List(
     arithmeticCase("listEmpty", "ListEmpty", "list-empty"),
     arithmeticCase("listLiteral", "ListLiteral", "list-literal"),
     arithmeticCase("nestedListLiteral", "NestedListLiteral", "nested-list-literal"),
@@ -42,7 +56,10 @@ class SupportedFunctionEquivalenceTest extends TastyEquivalenceSuite:
     arithmeticCase("mapPassThrough", "MapPassThrough", "map-pass-through"),
     arithmeticCase("mapGet", "MapGet", "map-get"),
     arithmeticCase("forYieldIncrement", "ForYieldIncrement", "for-yield-increment"),
-    arithmeticCase("forYieldExpand", "ForYieldExpand", "for-yield-expand"),
+    arithmeticCase("forYieldExpand", "ForYieldExpand", "for-yield-expand")
+  )
+
+  private val tupleCases = List(
     arithmeticCase("tupleLiteral", "TupleLiteral", "tuple-literal"),
     arithmeticCase("tuplePassThrough", "TuplePassThrough", "tuple-pass-through"),
     arithmeticCase("extractFirst", "ExtractFirst", "extract-first"),
@@ -51,36 +68,46 @@ class SupportedFunctionEquivalenceTest extends TastyEquivalenceSuite:
     arithmeticCase("extractSecond", "ExtractSecond", "extract-second"),
     arithmeticCase("tupleDestructureAdd", "TupleDestructureAdd", "tuple-destructure-add"),
     arithmeticCase("tupleDestructureAdd3", "TupleDestructureAdd3", "tuple-destructure-add-3"),
-    arithmeticCase("tupleDestructureAdd4", "TupleDestructureAdd4", "tuple-destructure-add-4"),
-    arithmeticCase("clamp", "Clamp", "clamp"),
-    arithmeticCase("integerDivide", "IntegerDivide", "integer-divide"),
+    arithmeticCase("tupleDestructureAdd4", "TupleDestructureAdd4", "tuple-destructure-add-4")
+  )
+
+  private val bindingCases = List(
     arithmeticCase("localVal", "LocalVal", "local-val"),
     arithmeticCase("localValChain", "LocalValChain", "local-val-chain"),
-    arithmeticCase("localValHelperCall", "LocalValHelperCall", "local-val-helper-call"),
-    arithmeticCase("helperCall", "HelperCall", "helper-call"),
-    arithmeticCase("curriedHelperCall", "CurriedHelperCall", "curried-helper-call"),
-    arithmeticCase("decimalAdd", "DecimalAdd", "decimal-add"),
-    arithmeticCase("decimalSubtract", "DecimalSubtract", "decimal-subtract"),
-    arithmeticCase("decimalMultiply", "DecimalMultiply", "decimal-multiply"),
-    arithmeticCase("decimalLt", "DecimalLt", "decimal-lt"),
-    arithmeticCase("decimalLte", "DecimalLte", "decimal-lte"),
-    arithmeticCase("decimalGt", "DecimalGt", "decimal-gt"),
-    arithmeticCase("decimalGte", "DecimalGte", "decimal-gte"),
+    arithmeticCase("localValHelperCall", "LocalValHelperCall", "local-val-helper-call")
+  )
+
+  private val maybeCases = List(
     arithmeticCase("maybeJust", "MaybeJust", "maybe-just"),
     arithmeticCase("maybeNothing", "MaybeNothing", "maybe-nothing"),
-    arithmeticCase("maybePositive", "MaybePositive", "maybe-positive"),
+    arithmeticCase("maybePositive", "MaybePositive", "maybe-positive")
+  )
+
+  private val matchCases = List(
     arithmeticCase("booleanLiteralMatch", "BooleanLiteralMatch", "boolean-literal-match"),
     arithmeticCase("intLiteralMatch", "IntLiteralMatch", "int-literal-match"),
     arithmeticCase("floatLiteralMatch", "FloatLiteralMatch", "float-literal-match"),
     arithmeticCase("stringLiteralMatch", "StringLiteralMatch", "string-literal-match"),
     arithmeticCase("maybeMatchDefault", "MaybeMatchDefault", "maybe-match-default"),
     arithmeticCase("maybeMatchIncrement", "MaybeMatchIncrement", "maybe-match-increment"),
-    arithmeticCase("maybeMatchMap", "MaybeMatchMap", "maybe-match-map"),
+    arithmeticCase("maybeMatchMap", "MaybeMatchMap", "maybe-match-map")
+  )
+
+  private val adtCases = List(
     arithmeticMultiFileCase("simpleColorAdt", List("Color", "MatchRed", "WrapRed"), "simple-color-adt"),
     arithmeticMultiFileCase("colorWithValueAdt", List("ColorWithValue", "GetIntensity", "RedFortyTwo"), "color-with-value-adt"),
     arithmeticMultiFileCase("colorWithTwoValuesAdt", List("ColorWithTwoValues", "GetNamedIntensity", "NamedRed"), "color-with-two-values-adt"),
     arithmeticMultiFileCase("colorWithThreeValuesAdt", List("ColorWithThreeValues", "GetPrimaryValue", "NamedRedPriority"), "color-with-three-values-adt")
   )
+
+  private val equivalenceCases =
+    scalarCases ++
+      collectionCases ++
+      tupleCases ++
+      bindingCases ++
+      maybeCases ++
+      matchCases ++
+      adtCases
 
   registerEquivalenceCases(equivalenceCases)(
     testName = equivalenceCase => s"${equivalenceCase.caseName}: Scala and Elm distributions are identical",
