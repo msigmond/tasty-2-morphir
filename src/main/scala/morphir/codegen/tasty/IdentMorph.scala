@@ -29,6 +29,8 @@ object IdentMorph extends TreeResolver {
   def toValue(id: Ident[?], inferredGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]] = None)(using Quotes)(using Contexts.Context): Try[Value.Value[Unit, MorphType.Type[Unit]]] = {
     if isNilValue(id) then
       toEmptyListValue(id, inferredGenericTypeArgs)
+    else if isUnitValue(id) then
+      Success(toUnitValue)
     else if id.symbol.flags.is(Flags.CaseAccessor) then
       toCaseAccessorValue(id, inferredGenericTypeArgs)
     else
@@ -88,4 +90,7 @@ object IdentMorph extends TreeResolver {
       case "Nil" :: _ => true
       case _ => false
     }
+
+  private def isUnitValue(id: Ident[?])(using Quotes)(using Contexts.Context): Boolean =
+    isUnitValueSymbol(resolveNamespace(id.symbol))
 }

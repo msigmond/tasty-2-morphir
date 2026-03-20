@@ -10,11 +10,16 @@ package morphir.codegen.tasty
   */
 class SupportedFunctionEquivalenceTest extends TastyEquivalenceSuite:
 
-  private val scalarCases = List(
+  private val arithmeticCases = List(
     arithmeticCase("add", "Add", "add"),
     arithmeticCase("subtract", "Subtract", "subtract"),
     arithmeticCase("multiply", "Multiply", "multiply"),
     arithmeticCase("isPositive", "IsPositive", "is-positive"),
+    arithmeticCase("clamp", "Clamp", "clamp"),
+    arithmeticCase("integerDivide", "IntegerDivide", "integer-divide")
+  )
+
+  private val literalCases = List(
     arithmeticCase("booleanLiteral", "BooleanLiteral", "boolean-literal"),
     arithmeticCase("booleanAnd", "BooleanAnd", "boolean-and"),
     arithmeticCase("booleanOr", "BooleanOr", "boolean-or"),
@@ -23,11 +28,15 @@ class SupportedFunctionEquivalenceTest extends TastyEquivalenceSuite:
     arithmeticCase("stringLiteral", "StringLiteral", "string-literal"),
     arithmeticCase("doubleAdd", "DoubleAdd", "double-add"),
     arithmeticCase("longLiteral", "LongLiteral", "long-literal"),
-    arithmeticCase("longAdd", "LongAdd", "long-add"),
-    arithmeticCase("clamp", "Clamp", "clamp"),
-    arithmeticCase("integerDivide", "IntegerDivide", "integer-divide"),
+    arithmeticCase("longAdd", "LongAdd", "long-add")
+  )
+
+  private val helperCases = List(
     arithmeticCase("helperCall", "HelperCall", "helper-call"),
-    arithmeticCase("curriedHelperCall", "CurriedHelperCall", "curried-helper-call"),
+    arithmeticCase("curriedHelperCall", "CurriedHelperCall", "curried-helper-call")
+  )
+
+  private val decimalCases = List(
     arithmeticCase("decimalAdd", "DecimalAdd", "decimal-add"),
     arithmeticCase("decimalSubtract", "DecimalSubtract", "decimal-subtract"),
     arithmeticCase("decimalMultiply", "DecimalMultiply", "decimal-multiply"),
@@ -35,6 +44,14 @@ class SupportedFunctionEquivalenceTest extends TastyEquivalenceSuite:
     arithmeticCase("decimalLte", "DecimalLte", "decimal-lte"),
     arithmeticCase("decimalGt", "DecimalGt", "decimal-gt"),
     arithmeticCase("decimalGte", "DecimalGte", "decimal-gte")
+  )
+
+  private val scalarCases =
+    arithmeticCases ++ literalCases ++ helperCases ++ decimalCases
+
+  private val foundationalTypeGapCases = List(
+    arithmeticCase("unitBasics", "UnitBasics", "unit-basics"),
+    arithmeticCase("smallIntBasics", "SmallIntBasics", "small-int-basics")
   )
 
   private val collectionCases = List(
@@ -102,6 +119,7 @@ class SupportedFunctionEquivalenceTest extends TastyEquivalenceSuite:
 
   private val equivalenceCases =
     scalarCases ++
+      foundationalTypeGapCases ++
       collectionCases ++
       tupleCases ++
       bindingCases ++

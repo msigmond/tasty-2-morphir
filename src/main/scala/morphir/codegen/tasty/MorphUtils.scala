@@ -37,7 +37,7 @@ object MorphUtils {
       ApplyMorph.toValue(apl, inferredGenericTypeArgs)
 
   extension (lit: Literal[?])(using Quotes)(using Contexts.Context)
-    def toValue: Try[Value.Value.Literal[Unit, MorphType.Type[Unit]]] =
+    def toValue: Try[Value.Value[Unit, MorphType.Type[Unit]]] =
       LiteralMorph.toValue(lit)
 
   extension (sel: Select[?])(using Quotes)(using Contexts.Context)
@@ -73,6 +73,7 @@ object MorphUtils {
       case Value.Value.PatternMatch(t, _, _) => Success(t)
       case Value.Value.Tuple(t, _) => Success(t)
       case Value.Value.List(t, _) => Success(t)
+      case Value.Value.Unit(t) => Success(t)
       case x => Failure(UnsupportedOperationException(s"Value type is not supported: ${x.getClass}"))
     }
 

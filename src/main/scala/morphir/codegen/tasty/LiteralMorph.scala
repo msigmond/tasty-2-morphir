@@ -9,13 +9,22 @@ import scala.quoted.Quotes
 import scala.util.{Failure, Success, Try}
 
 object LiteralMorph {
+  private def intBackedLiteral(value: Int): (MorphType.Type[Unit], MorphLiteral.Literal) =
+    (StandardTypes.intReference, MorphLiteral.intLiteral(value))
+
   def toLiteral(lit: Literal[?])(using Quotes)(using Contexts.Context): Try[(MorphType.Type[Unit], MorphLiteral.Literal)] =
     lit match {
       case Literal(Constant(value: Boolean)) =>
         Success((StandardTypes.boolReference, MorphLiteral.boolLiteral(value)))
 
       case Literal(Constant(value: Int)) =>
-        Success((StandardTypes.intReference, MorphLiteral.intLiteral(value)))
+        Success(intBackedLiteral(value))
+
+      case Literal(Constant(value: Byte)) =>
+        Success(intBackedLiteral(value.toInt))
+
+      case Literal(Constant(value: Short)) =>
+        Success(intBackedLiteral(value.toInt))
 
       case Literal(Constant(value: Long)) =>
         Success((StandardTypes.intReference, MorphLiteral.intLiteral(morphir.sdk.Int.fromInt64(value))))
@@ -35,15 +44,20 @@ object LiteralMorph {
       case Literal(Constant(x)) => Failure(Exception(s"Literal not supported: ${x.getClass}"))
     }
 
-  def toValue(lit: Literal[?])(using Quotes)(using Contexts.Context): Try[Value.Value.Literal[Unit, MorphType.Type[Unit]]] = {
-    for {
-      (morphType, morphLiteral) <- toLiteral(lit)
-    } yield
-      Value.Value.Literal(
-        morphType,
-        morphLiteral
-      )
-  }
+  def toValue(lit: Literal[?])(using Quotes)(using Contexts.Context): Try[Value.Value[Unit, MorphType.Type[Unit]]] =
+    lit match {
+      case Literal(Constant(_: scala.runtime.BoxedUnit)) =>
+        Success(Value.Value.Unit(StandardTypes.unitType))
+
+      case _ =>
+        for {
+          (morphType, morphLiteral) <- toLiteral(lit)
+        } yield
+          Value.Value.Literal(
+            morphType,
+            morphLiteral
+          )
+    }
 
   def toPattern(lit: Literal[?])(using Quotes)(using Contexts.Context): Try[Value.Pattern.LiteralPattern[MorphType.Type[Unit]]] = {
     for {

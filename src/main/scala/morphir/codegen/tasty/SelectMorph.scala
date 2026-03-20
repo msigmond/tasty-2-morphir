@@ -8,13 +8,16 @@ import morphir.ir.{Name, Value, Type as MorphType}
 import morphir.sdk.List as MorphList
 
 import scala.quoted.Quotes
-import scala.util.Try
+import scala.util.{Success, Try}
 
 object SelectMorph extends TreeResolver {
   private val selfParamName = Name.fromString("this")
 
   def toValue(sel: Select[?], inferredGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]])(using Quotes)(using Contexts.Context): Try[Value.Value[Unit, MorphType.Type[Unit]]] = {
     sel match {
+      case Select(_, _) if isUnitValue(sel) =>
+        Success(toUnitValue)
+
       case Select(_, _) if isEnumConstructor(sel) =>
         for {
           returnType <- resolveType(sel, inferredGenericTypeArgs)
@@ -71,4 +74,7 @@ object SelectMorph extends TreeResolver {
   private def isEnumConstructor(sel: Select[?])(using Quotes)(using Contexts.Context): Boolean =
     (sel.symbol.flags.is(Flags.Case) && !sel.symbol.flags.is(Flags.CaseAccessor)) ||
       sel.symbol.companionClass.flags.is(Flags.Case)
+
+  private def isUnitValue(sel: Select[?])(using Quotes)(using Contexts.Context): Boolean =
+    isUnitValueSymbol(resolveNamespace(sel.symbol))
 }

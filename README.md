@@ -54,13 +54,16 @@ Arguments:
 ### Supported types
 
 - `Boolean`
+- `Byte` (mapped to Morphir `int`)
 - `Int`
+- `Short` (mapped to Morphir `int`)
 - `Long` (currently mapped to Morphir `int`)
 - `Float`
 - `Double` (mapped to Morphir `float`)
 - `Char`
 - `String`
 - `BigDecimal`
+- `Unit`
 - `Option[T]`
 - `List[T]` for the current narrow empty-list, direct `List(...)` literal, nested-list literal, direct `length`, direct single-lambda `map` / `filter` / `flatMap`, narrow `foldLeft`, and narrow `collect` slices
 - `Seq[T]` for the current normalization slice covering direct `Seq(...)` literals plus direct `map` / `flatMap` / `foldLeft` onto the proven Morphir list path
@@ -72,6 +75,7 @@ Arguments:
 ### Supported expressions
 
 - literals, including `Boolean`, `Long`, `Char`, and direct `String` literals
+- `Unit` values via `()`
 - arithmetic operators: `+`, `-`, `*`, `/`
 - boolean operators: `&&`, `||`
 - comparison operators: `<`, `<=`, `>`, `>=`
@@ -108,8 +112,11 @@ Arguments:
 - `BigDecimal` arithmetic and comparison map to Morphir decimal SDK functions
 - Scala `BigDecimal /` maps to `morphir.SDK.decimal.div.unsafe`
 - Scala `Long` currently maps to Morphir `int`
+- Scala `Byte` currently maps to Morphir `int`
+- Scala `Short` currently maps to Morphir `int`
 - Scala `Double` maps to Morphir `float`
 - Scala `Char` maps to Morphir `char`
+- Scala `Unit` maps to Morphir unit
 - Scala `List[T]` maps to Morphir `morphir.SDK.list.list[T]`
 - Scala `List.length` maps to Morphir `morphir.SDK.list.length`
 - Scala `List.map` maps to Morphir `morphir.SDK.list.map`

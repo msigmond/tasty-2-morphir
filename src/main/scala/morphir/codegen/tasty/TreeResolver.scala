@@ -30,6 +30,13 @@ trait TreeResolver {
     List("Map", "immutable", "collection", "scala")
   )
 
+  private val unitValueNamespaces = Set(
+    List("()", "scala"),
+    List("()", "Predef", "scala"),
+    List("()", "package", "scala"),
+    List("UNIT", "BoxedUnit", "runtime", "scala")
+  )
+
   def resolveType(tree: Trees.Tree[?], inferredGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]])(using Quotes)(using Contexts.Context): Try[MorphType.Type[Unit]] = {
     resolveTypeOpt(tree.typeOpt, inferredGenericTypeArgs)
   }
@@ -91,6 +98,10 @@ trait TreeResolver {
         (symbolNamespace, maybeTypeArgs) match {
           case ("Boolean" :: "scala" :: Nil, _) =>
             StandardTypes.boolReference
+          case ("Byte" :: "scala" :: Nil, _) =>
+            StandardTypes.intReference
+          case ("Short" :: "scala" :: Nil, _) =>
+            StandardTypes.intReference
           case ("Int" :: "scala" :: Nil, _) =>
             StandardTypes.intReference
           case ("Long" :: "scala" :: Nil, _) =>
@@ -109,6 +120,8 @@ trait TreeResolver {
             StandardTypes.decimalReference
           case ("BigDecimal" :: "package" :: "scala" :: Nil, _) => // type alias to scala.math.BigDecimal
             StandardTypes.decimalReference
+          case ("Unit" :: "scala" :: Nil, _) =>
+            StandardTypes.unitType
           case (tupleName :: "scala" :: Nil, Some(typeArgs)) if isTupleTypeName(tupleName, typeArgs.size) =>
             MorphType.Tuple((), typeArgs)
           case (namespace, Some(typeArgs)) if matchesParameterizedReference(namespace, scalaListTypeNamespaces, typeArgs, 1) =>
@@ -150,6 +163,12 @@ trait TreeResolver {
     expectedArity: Int
   ): Boolean =
     expectedNamespaces.contains(symbolNamespace) && typeArgs.size == expectedArity
+
+  protected def isUnitValueSymbol(symbolNamespace: List[String]): Boolean =
+    unitValueNamespaces.contains(symbolNamespace)
+
+  protected def toUnitValue: Value.Value.Unit[Unit, MorphType.Type[Unit]] =
+    Value.Value.Unit(StandardTypes.unitType)
 
   private def resolveTypeParameter(
     typeParamSymbol: Symbols.Symbol,
