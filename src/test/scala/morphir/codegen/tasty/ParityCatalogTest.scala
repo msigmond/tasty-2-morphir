@@ -1,12 +1,16 @@
 package morphir.codegen.tasty
 
 import munit.FunSuite
+import scala.util.Try
 
 class ParityCatalogTest extends FunSuite:
   private val includedSurfaces = ParityCatalog.includedTargetSurfaces
 
   private def surfaceById(id: String): ParitySurface =
-    ParityCatalog.allTargetSurfaces.find(_.id == id).getOrElse(fail(s"Missing parity surface: $id"))
+    Try(ParityCatalog.surfaceById(id)).getOrElse(fail(s"Missing parity surface: $id"))
+
+  private def idsOf(surfaces: List[ParitySurface]): List[String] =
+    surfaces.map(_.id)
 
   test("parity catalog entries have unique ids and non-empty goals") {
     val ids = ParityCatalog.allTargetSurfaces.map(_.id)
@@ -88,4 +92,27 @@ class ParityCatalogTest extends FunSuite:
 
   test("excluded surfaces stay excluded in the coverage model") {
     assert(ParityCatalog.excludedElmCoreModules.forall(_.currentCoverage == ParityCoverage.Excluded))
+  }
+
+  test("recommended gap order covers every gap exactly once") {
+    assertEquals(idsOf(ParityCatalog.orderedGapSurfaces).distinct, idsOf(ParityCatalog.orderedGapSurfaces))
+    assertEquals(idsOf(ParityCatalog.orderedGapSurfaces).toSet, idsOf(ParityCatalog.gapSurfaces).toSet)
+  }
+
+  test("next roadmap slice starts with foundational partial surfaces") {
+    assertEquals(
+      idsOf(ParityCatalog.nextTenGapSurfaces),
+      List(
+        "elmcore-basics-bool",
+        "elmcore-comparable-equality",
+        "elmcore-int-float-number",
+        "language-literals",
+        "language-functions-lambdas",
+        "language-let-if-case",
+        "language-tuples-record-access",
+        "language-type-aliases-records",
+        "language-custom-types",
+        "language-patterns"
+      )
+    )
   }

@@ -170,32 +170,32 @@ Unrelated package roots still fail fast.
 
 ## Upcoming feature roadmap
 
-This is the current ordered plan for the next **10** supportable `tastyToMorphirIR` features.
+This is the current ordered plan for the next **10** parity slices.
 
-This roadmap is intentionally collection-focused and prioritizes exact-parity, value-producing collection operations before broader or side-effect-oriented traversal shapes.
+The order below is now derived from the current parity gap matrix in `ParityCatalog.scala` rather than being maintained as a standalone wishlist.
 
 Keep this section updated as the roadmap changes.
 
-1. **Collection predicates**  
-     Add narrow exact-parity support for predicate-style collection queries such as `List.exists` / `List.forall` once the core transform and fold paths are stable.
-2. **Collection concatenation**
-     Add exact-parity support for safe list-concatenation shapes such as `++` / append once the main transform, fold, and predicate slices are stable.
-3. **Collection zipping**
-     Add narrow exact-parity support for tuple-producing shapes such as `zip` once fold and pattern-aware collection support are stable enough to consume the resulting tuples.
-4. **Collection partitioning**
-     Add exact-parity support for narrow partition-style collection splits once predicate and tuple-consuming collection operations are in place.
-5. **Pattern-aware flat-mapped ADTs**
-     Extend the current explicit-match collection support from tuple-based lambdas to narrow ADT-oriented `map` / `flatMap` shapes over already-supported enums.
-6. **Nested collection folds**
-     Extend the current fold support to safe nested collection shapes once `Seq` normalization and core list predicate/concatenation slices are stable.
-7. **Pattern-aware collection predicates**
-     Extend the current explicit-match collection support to safe predicate-style collection queries over tuples and already-supported ADTs.
-8. **Map transformation pipelines**
-     Extend the current narrow dict surface from literals and simple signatures to safe transformation pipelines once the first lookup/fold operations are stable.
-9. **Broader map folds**
-     Extend the current narrow dict surface from `get` and literals to exact-parity fold-style map traversals once lookup and pipeline shapes are stable.
-10. **Pure foreach-style traversal results**
-     Explore whether any additional expression-only traversal syntax beyond the current pure `for`-`yield` slice can be supported without introducing effect-shaped semantics.
+1. **Basics and Bool helpers**  
+     Finish the remaining boolean and basics-oriented helper surface around the already-supported literal and branching core.
+2. **Comparable and equality parity**
+     Complete equality and ordering semantics across the supported scalar families.
+3. **Number helper parity**
+     Extend today’s arithmetic coverage into the broader Morphir number helper surface.
+4. **Literal breadth**
+     Fill the remaining basic literal and literal-adjacent gaps that other slices depend on.
+5. **Functions and lambdas breadth**
+     Broaden lambda, helper-function, and function-value parity beyond the current narrow forms.
+6. **Let / if / case completeness**
+     Extend local-binding and branching support toward fuller Elm-style expression parity.
+7. **Tuple and record-access breadth**
+     Expand tuple-consuming and record-access-driven expression shapes.
+8. **Record parity**
+     Move from narrow case-class alias support toward fuller record construction and update parity.
+9. **Custom-type parity**
+     Extend the current enum/custom-type surface to broader ADT representations and constructor usage.
+10. **Pattern completeness**
+     Broaden pattern matching so later collection and sugar slices can reuse a stronger core matcher.
 
 ## Test suite
 

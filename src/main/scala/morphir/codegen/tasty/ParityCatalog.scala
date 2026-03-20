@@ -390,3 +390,46 @@ object ParityCatalog:
 
   val gapSurfaces: List[ParitySurface] =
     includedTargetSurfaces.filter(_.currentCoverage != ParityCoverage.Supported)
+
+  private val allSurfacesById: Map[String, ParitySurface] =
+    allTargetSurfaces.map(surface => surface.id -> surface).toMap
+
+  def surfaceById(id: String): ParitySurface =
+    allSurfacesById.getOrElse(id, throw new java.util.NoSuchElementException(s"Unknown parity surface id: $id"))
+
+  val recommendedGapOrder: List[String] = List(
+    "elmcore-basics-bool",
+    "elmcore-comparable-equality",
+    "elmcore-int-float-number",
+    "language-literals",
+    "language-functions-lambdas",
+    "language-let-if-case",
+    "language-tuples-record-access",
+    "language-type-aliases-records",
+    "language-custom-types",
+    "language-patterns",
+    "elmcore-list",
+    "elmcore-maybe",
+    "sdk-decimal",
+    "sdk-dict",
+    "elmcore-string-char",
+    "elmcore-function",
+    "elmcore-result",
+    "sdk-result-list",
+    "sdk-validate",
+    "sdk-rule",
+    "sdk-aggregate",
+    "sdk-key",
+    "sdk-uuid",
+    "sdk-local-date",
+    "sdk-local-time",
+    "sdk-instant",
+    "sdk-json",
+    "sdk-stateful-app"
+  )
+
+  val orderedGapSurfaces: List[ParitySurface] =
+    recommendedGapOrder.map(surfaceById)
+
+  val nextTenGapSurfaces: List[ParitySurface] =
+    orderedGapSurfaces.take(10)
