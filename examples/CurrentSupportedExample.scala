@@ -1,5 +1,7 @@
 package examples
 
+import scala.math.{abs, max, min}
+
 enum Tier:
   case Plus, Vip
 
@@ -99,6 +101,15 @@ object CurrentSupportedExample:
 
   def thresholdTotal(values: List[Int]): Int =
     values.foldLeft(0)((total, value) => total + value)
+
+  def boundedMagnitude(value: Int, lower: Int, upper: Int): Int =
+    max(lower, min(abs(value), upper))
+
+  def floatAverage(total: Int, count: Int): Double =
+    total.toDouble / count.toDouble
+
+  def truncatedBand(value: Float): Int =
+    value.toInt
 
   def collectedThresholds(values: List[Option[Int]]): List[Int] =
     values.collect {

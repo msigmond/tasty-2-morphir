@@ -8,6 +8,7 @@ import scala.quoted.Quotes
 import scala.util.{Failure, Success, Try}
 
 object StandardFunctions {
+  private val basicsPackage = FQName.fqn("morphir.SDK")("basics")
 
   private def isDecimalType(morphType: MorphType.Type[Unit]): Boolean =
     morphType == StandardTypes.decimalReference
@@ -85,23 +86,44 @@ object StandardFunctions {
     symbolNamespace match {
       case "length" :: _ if isListType(argumentType) =>
         Success(toUnaryFunctionReference(FQName.fqn("morphir.SDK")("list")("length"), returnType, argumentType))
-      case "&&" :: _ => Success(toFunctionReference(FQName.fqn("morphir.SDK")("basics")("and"), returnType, argumentType))
-      case "||" :: _ => Success(toFunctionReference(FQName.fqn("morphir.SDK")("basics")("or"), returnType, argumentType))
-      case "==" :: _ => Success(toFunctionReference(FQName.fqn("morphir.SDK")("basics")("equal"), returnType, argumentType))
-      case "!=" :: _ => Success(toFunctionReference(FQName.fqn("morphir.SDK")("basics")("not.equal"), returnType, argumentType))
-      case "unary_!" :: _ => Success(toUnaryFunctionReference(FQName.fqn("morphir.SDK")("basics")("not"), returnType, argumentType))
-      case "unary_-" :: _ => Success(toUnaryFunctionReference(FQName.fqn("morphir.SDK")("basics")("negate"), returnType, argumentType))
-      case "/" :: "Int" :: "scala" :: Nil => Success(toFunctionReference(FQName.fqn("morphir.SDK")("basics")("integerDivide"), returnType, argumentType))
-      case "+" :: _ => Success(toFunctionReference(FQName.fqn("morphir.SDK")("basics")("add"), returnType, argumentType))
-      case "-" :: _ => Success(toFunctionReference(FQName.fqn("morphir.SDK")("basics")("subtract"), returnType, argumentType))
-      case "*" :: _ => Success(toFunctionReference(FQName.fqn("morphir.SDK")("basics")("multiply"), returnType, argumentType))
-      case "/" :: _ => Success(toFunctionReference(FQName.fqn("morphir.SDK")("basics")("divide"), returnType, argumentType))
-      case "<" :: _  => Success(toFunctionReference(FQName.fqn("morphir.SDK")("basics")("less.than"), returnType, argumentType))
-      case "<=" :: _ => Success(toFunctionReference(FQName.fqn("morphir.SDK")("basics")("less.than.or.equal"), returnType, argumentType))
-      case ">" :: _  => Success(toFunctionReference(FQName.fqn("morphir.SDK")("basics")("greater.than"), returnType, argumentType))
-      case ">=" :: _ => Success(toFunctionReference(FQName.fqn("morphir.SDK")("basics")("greater.than.or.equal"), returnType, argumentType))
+      case "&&" :: _ => Success(basicsBinary("and", returnType, argumentType))
+      case "||" :: _ => Success(basicsBinary("or", returnType, argumentType))
+      case "==" :: _ => Success(basicsBinary("equal", returnType, argumentType))
+      case "!=" :: _ => Success(basicsBinary("not.equal", returnType, argumentType))
+      case "unary_!" :: _ => Success(basicsUnary("not", returnType, argumentType))
+      case "unary_-" :: _ => Success(basicsUnary("negate", returnType, argumentType))
+      case "abs" :: _ => Success(basicsUnary("abs", returnType, argumentType))
+      case "toDouble" :: _ | "toFloat" :: _ if argumentType == StandardTypes.intReference && returnType == StandardTypes.floatReference =>
+        Success(basicsUnary("to.float", returnType, argumentType))
+      case "toInt" :: _ if argumentType == StandardTypes.floatReference && returnType == StandardTypes.intReference =>
+        Success(basicsUnary("truncate", returnType, argumentType))
+      case "min" :: _ => Success(basicsBinary("min", returnType, argumentType))
+      case "max" :: _ => Success(basicsBinary("max", returnType, argumentType))
+      case "/" :: "Int" :: "scala" :: Nil => Success(basicsBinary("integerDivide", returnType, argumentType))
+      case "+" :: _ => Success(basicsBinary("add", returnType, argumentType))
+      case "-" :: _ => Success(basicsBinary("subtract", returnType, argumentType))
+      case "*" :: _ => Success(basicsBinary("multiply", returnType, argumentType))
+      case "/" :: _ => Success(basicsBinary("divide", returnType, argumentType))
+      case "<" :: _  => Success(basicsBinary("less.than", returnType, argumentType))
+      case "<=" :: _ => Success(basicsBinary("less.than.or.equal", returnType, argumentType))
+      case ">" :: _  => Success(basicsBinary("greater.than", returnType, argumentType))
+      case ">=" :: _ => Success(basicsBinary("greater.than.or.equal", returnType, argumentType))
       case x => Failure(Exception(s"Standard function for symbol ${symbolNamespace.mkString(",")} not found."))
     }
+
+  private def basicsBinary(
+    localName: String,
+    returnType: MorphType.Type[Unit],
+    argumentType: MorphType.Type[Unit]
+  )(using Quotes)(using Contexts.Context): Value.Value.Reference[Unit, MorphType.Type[Unit]] =
+    toFunctionReference(basicsPackage(localName), returnType, argumentType)
+
+  private def basicsUnary(
+    localName: String,
+    returnType: MorphType.Type[Unit],
+    argumentType: MorphType.Type[Unit]
+  )(using Quotes)(using Contexts.Context): Value.Value.Reference[Unit, MorphType.Type[Unit]] =
+    toUnaryFunctionReference(basicsPackage(localName), returnType, argumentType)
 
   private def toFunctionReference(fQName: FQName.FQName, returnType: MorphType.Type[Unit], argumentType: MorphType.Type[Unit])(using Quotes)(using Contexts.Context): Value.Value.Reference[Unit, MorphType.Type[Unit]] = {
     Value.Value.Reference(

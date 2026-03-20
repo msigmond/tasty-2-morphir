@@ -39,7 +39,7 @@ object ApplyMorph extends TreeResolver {
         for {
           returnType <- resolveType(apl, inferredGenericTypeArgs)
           maybeGenericTypeArgs = returnType.extractGenericTypeArgs
-          theApply <- toValue(functionId, returnType, args.reverse, maybeGenericTypeArgs)
+          theApply <- toNamedApplyValue(functionId, returnType, args, maybeGenericTypeArgs)
         } yield
           theApply
 
@@ -164,6 +164,30 @@ object ApplyMorph extends TreeResolver {
             listValue
           )
     }
+
+  private def toNamedApplyValue(
+    functionId: Trees.Ident[?],
+    returnType: MorphType.Type[Unit],
+    args: List[Trees.Tree[?]],
+    inferredGenericTypeArgs: Option[MorphList.List[MorphType.Type[Unit]]]
+  )(using Quotes)(using Contexts.Context): Try[Value.Value[Unit, MorphType.Type[Unit]]] = {
+    val maybeStandardFunction =
+      args match {
+        case firstArg :: _ =>
+          for {
+            firstArgument <- expandSubTree(firstArg, inferredGenericTypeArgs)
+            firstArgumentType <- firstArgument.extractType
+            function <- StandardFunctions.get(functionId.symbol, returnType, firstArgumentType)
+            applied <- applyArguments(function, args, inferredGenericTypeArgs)
+          } yield applied
+        case Nil =>
+          Failure(Exception(s"Named apply without arguments is unsupported for ${functionId.symbol.name.show}"))
+      }
+
+    maybeStandardFunction.orElse {
+      toValue(functionId, returnType, args.reverse, inferredGenericTypeArgs)
+    }
+  }
 
   private def toListHigherOrderMethodValue(
     apl: Trees.Apply[?],

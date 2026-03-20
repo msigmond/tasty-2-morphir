@@ -81,6 +81,7 @@ Arguments:
 - equality operators: `==`, `!=`
 - comparison operators: `<`, `<=`, `>`, `>=`
 - unary operators: logical negation `!` and numeric negation `-value`
+- numeric helpers: `abs`, `min`, `max`, `toDouble`/`toFloat` from `Int`, and `toInt` from `Float`/`Double`
 - function application
 - `if / else`
 - pattern matching for `Option` constructors and supported scalar literal patterns, including `Float`
@@ -117,6 +118,11 @@ Arguments:
 - Scala `Byte` currently maps to Morphir `int`
 - Scala `Short` currently maps to Morphir `int`
 - Scala `Double` maps to Morphir `float`
+- Scala `abs` maps to Morphir `morphir.SDK.basics.abs`
+- Scala `min` maps to Morphir `morphir.SDK.basics.min`
+- Scala `max` maps to Morphir `morphir.SDK.basics.max`
+- Scala `Int.toDouble` / `Int.toFloat` map to Morphir `morphir.SDK.basics.toFloat`
+- Scala `Float.toInt` / `Double.toInt` map to Morphir `morphir.SDK.basics.truncate`
 - Scala `Char` maps to Morphir `char`
 - Scala `Unit` maps to Morphir unit
 - Scala `List[T]` maps to Morphir `morphir.SDK.list.list[T]`
