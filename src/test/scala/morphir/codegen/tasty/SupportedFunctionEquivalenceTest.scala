@@ -41,6 +41,8 @@ class SupportedFunctionEquivalenceTest extends TastyEquivalenceSuite:
     arithmeticCase("mapLiteral", "MapLiteral", "map-literal"),
     arithmeticCase("mapPassThrough", "MapPassThrough", "map-pass-through"),
     arithmeticCase("mapGet", "MapGet", "map-get"),
+    arithmeticCase("forYieldIncrement", "ForYieldIncrement", "for-yield-increment"),
+    arithmeticCase("forYieldExpand", "ForYieldExpand", "for-yield-expand"),
     arithmeticCase("tupleLiteral", "TupleLiteral", "tuple-literal"),
     arithmeticCase("tuplePassThrough", "TuplePassThrough", "tuple-pass-through"),
     arithmeticCase("extractFirst", "ExtractFirst", "extract-first"),

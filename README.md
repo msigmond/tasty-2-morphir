@@ -99,6 +99,7 @@ Arguments:
 - narrow immutable `Map(...)` literals built from direct `key -> value` pairs
 - narrow immutable `Map[K, V]` pass-through signatures
 - narrow immutable `Map.get` lookups that return `Option` / Morphir `Maybe`
+- pure list `for`-`yield` traversal shapes that lower to the already-supported `map` / `flatMap` surface
 - pattern-aware list transforms via explicit `match` expressions inside supported list lambdas, starting with tuple matches
 
 ### Mapping notes
@@ -151,26 +152,26 @@ This roadmap is intentionally collection-focused and prioritizes exact-parity, v
 
 Keep this section updated as the roadmap changes.
 
-1. **`foreach` and `for`-style traversal**  
-     Explore constrained support for pure traversal shapes only after the value-returning collection operators above are stable and well baselined.
-2. **Collection predicates**  
+1. **Collection predicates**  
      Add narrow exact-parity support for predicate-style collection queries such as `List.exists` / `List.forall` once the core transform and fold paths are stable.
-3. **Collection concatenation**
+2. **Collection concatenation**
      Add exact-parity support for safe list-concatenation shapes such as `++` / append once the main transform, fold, and predicate slices are stable.
-4. **Collection zipping**
+3. **Collection zipping**
      Add narrow exact-parity support for tuple-producing shapes such as `zip` once fold and pattern-aware collection support are stable enough to consume the resulting tuples.
-5. **Collection partitioning**
+4. **Collection partitioning**
      Add exact-parity support for narrow partition-style collection splits once predicate and tuple-consuming collection operations are in place.
-6. **Pattern-aware flat-mapped ADTs**
+5. **Pattern-aware flat-mapped ADTs**
      Extend the current explicit-match collection support from tuple-based lambdas to narrow ADT-oriented `map` / `flatMap` shapes over already-supported enums.
-7. **Nested collection folds**
+6. **Nested collection folds**
      Extend the current fold support to safe nested collection shapes once `Seq` normalization and core list predicate/concatenation slices are stable.
-8. **Pattern-aware collection predicates**
+7. **Pattern-aware collection predicates**
      Extend the current explicit-match collection support to safe predicate-style collection queries over tuples and already-supported ADTs.
-9. **Map transformation pipelines**
+8. **Map transformation pipelines**
      Extend the current narrow dict surface from literals and simple signatures to safe transformation pipelines once the first lookup/fold operations are stable.
-10. **Broader map folds**
+9. **Broader map folds**
      Extend the current narrow dict surface from `get` and literals to exact-parity fold-style map traversals once lookup and pipeline shapes are stable.
+10. **Pure foreach-style traversal results**
+     Explore whether any additional expression-only traversal syntax beyond the current pure `for`-`yield` slice can be supported without introducing effect-shaped semantics.
 
 ## Test suite
 

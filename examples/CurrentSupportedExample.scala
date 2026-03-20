@@ -114,6 +114,11 @@ object CurrentSupportedExample:
   def thresholdValue(name: String, values: Map[String, Int]): Option[Int] =
     values.get(name)
 
+  def incrementedWithFor(values: List[Int]): List[Int] =
+    for
+      value <- values
+    yield value + 1
+
   def summedPairs(values: List[(Int, Int)]): List[Int] =
     values.map(pair =>
       pair match
