@@ -91,6 +91,7 @@ Arguments:
 - direct `List.filter` with a single-argument lambda whose predicate stays within the supported expression surface
 - direct `List.flatMap` with a single-argument lambda whose body returns another supported `List`
 - narrow `List.foldLeft` with a two-parameter lambda whose body stays within the supported expression surface
+- pattern-aware list transforms via explicit `match` expressions inside supported list lambdas, starting with tuple matches
 
 ### Mapping notes
 
@@ -137,26 +138,26 @@ This roadmap is intentionally collection-focused and prioritizes exact-parity, v
 
 Keep this section updated as the roadmap changes.
 
-1. **Pattern-aware list `map` / `flatMap`**  
-   Support element destructuring and explicit `match` expressions inside list transforms, starting with tuples and existing ADT shapes.
-2. **List `collect`**  
+1. **List `collect`**  
    Add a narrow `collect` slice by lowering supported partial-function patterns only where exact Elm parity remains stable.
-3. **`Seq[T]` normalization**  
+2. **`Seq[T]` normalization**  
    Normalize the most common immutable `Seq` shapes onto the proven list path, starting with literals plus `map` / `flatMap` / `foldLeft`.
-4. **`Map[K, V]` types and literals**  
+3. **`Map[K, V]` types and literals**  
    Add narrow `Map` type/literal support only for key/value shapes that can be matched exactly against Elm-generated Morphir baselines.
-5. **Core `Map` operations**  
+4. **Core `Map` operations**  
    Add the safest exact-parity `Map` operations next, likely starting with lookup and fold-oriented shapes before broader transforms.
-6. **`foreach` and `for`-style traversal**  
+5. **`foreach` and `for`-style traversal**  
     Explore constrained support for pure traversal shapes only after the value-returning collection operators above are stable and well baselined.
-7. **Collection predicates**  
+6. **Collection predicates**  
     Add narrow exact-parity support for predicate-style collection queries such as `List.exists` / `List.forall` once the core transform and fold paths are stable.
-8. **Collection concatenation**
+7. **Collection concatenation**
     Add exact-parity support for safe list-concatenation shapes such as `++` / append once the main transform, fold, and predicate slices are stable.
-9. **Collection zipping**
+8. **Collection zipping**
     Add narrow exact-parity support for tuple-producing shapes such as `zip` once fold and pattern-aware collection support are stable enough to consume the resulting tuples.
-10. **Collection partitioning**
+9. **Collection partitioning**
     Add exact-parity support for narrow partition-style collection splits once predicate and tuple-consuming collection operations are in place.
+10. **Pattern-aware flat-mapped ADTs**
+    Extend the current explicit-match collection support from tuple-based lambdas to narrow ADT-oriented `map` / `flatMap` shapes over already-supported enums.
 
 ## Test suite
 

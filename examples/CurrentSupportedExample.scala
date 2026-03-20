@@ -100,6 +100,12 @@ object CurrentSupportedExample:
   def thresholdTotal(values: List[Int]): Int =
     values.foldLeft(0)((total, value) => total + value)
 
+  def summedPairs(values: List[(Int, Int)]): List[Int] =
+    values.map(pair =>
+      pair match
+        case (left, right) => left + right
+    )
+
   def keepsReward(person: Person, reward: Reward): Reward =
     if person.boundedBonus(10L, 20L) > 10L then reward
     else Reward.Bonus(0)
